@@ -11,6 +11,7 @@
 
 @interface AudioUnitManager ()
 
+@property (nonatomic, assign) BOOL isAUGraphRunning;
 @property (nonatomic, assign) BOOL isPlaying;
 @property (nonatomic, assign) BOOL isRecording;
 
@@ -70,6 +71,9 @@ static OSStatus InputCallbackProc(void* inRefCon
                                      , UInt32 inNumberFrames
                                      , AudioBufferList* __nullable ioData) {
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
+    if (!auMgr.isRecording)
+        return noErr;
+    
     int numBuffers = 1;
     if (!auMgr.audioBufferList)
     {
@@ -96,6 +100,14 @@ static OSStatus InputCallbackProc(void* inRefCon
         }
     }
     OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
+    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManagerDidReceiveAudioData:length:busNumber:)])
+    {
+        for (int i=0; i<numBuffers; ++i)
+        {
+            [auMgr.delegate audioUnitManagerDidReceiveAudioData:auMgr.audioBufferList->mBuffers[i].mData length:auMgr.audioBufferList->mBuffers[i].mDataByteSize busNumber:i];
+            
+        }
+    }
     //NSLog(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
     return noErr;
 }
@@ -229,22 +241,45 @@ static OSStatus InputCallbackProc(void* inRefCon
     [audioSession setActive:YES error:nil];
 }
 
--(void) startPlaying {
-    _isPlaying = YES;
+-(void) startAUGraphIfNecessary {
+    if (_isAUGraphRunning || !_auGraph)
+        return;
     
     OSStatus result = AUGraphStart(_auGraph);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    _isAUGraphRunning = YES;
+}
+
+-(void) stopAUGraphIfNecessary {
+    if (!_isAUGraphRunning || !_auGraph)
+        return;
     
+    if (_isPlaying || _isRecording)
+        return;
+    
+    OSStatus result = AUGraphStop(_auGraph);
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    _isAUGraphRunning = NO;
+}
+
+-(void) startPlaying {
+    _isPlaying = YES;
+    [self startAUGraphIfNecessary];
 }
 
 -(void) stopPlaying {
-    if (!_auGraph)
-        return;
-    
     _isPlaying = NO;
-    OSStatus result = AUGraphStop(_auGraph);
-    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    
+    [self stopAUGraphIfNecessary];
+}
+
+-(void) startRecording {
+    _isRecording = YES;
+    [self startAUGraphIfNecessary];
+}
+
+-(void) stopRecording {
+    _isRecording = NO;
+    [self stopAUGraphIfNecessary];
 }
 
 -(void) dealloc {
@@ -254,6 +289,9 @@ static OSStatus InputCallbackProc(void* inRefCon
 -(instancetype) init {
     if (self = [super init])
     {
+        _isAUGraphRunning = NO;
+        _isPlaying = NO;
+        _isRecording = NO;
         [self open];
     }
     return self;
