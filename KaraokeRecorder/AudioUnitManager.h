@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length channel:(int)channel;
 
+@optional
 -(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel;
 
 @end

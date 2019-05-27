@@ -85,7 +85,7 @@
     if (0 == button.tag)
     {
         [_auMgr startPlaying];
-        
+        NSLog(@"#AudioUnit# Start playing");
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             NSString* docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
             for (int i=0; i<2; ++i)

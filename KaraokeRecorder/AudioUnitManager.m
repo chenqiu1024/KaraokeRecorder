@@ -32,7 +32,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
                                      , AudioBufferList* __nullable ioData) {
     if (!ioData)
         return noErr;
-    
+//    NSLog(@"#AudioUnit# *ioActionFlags=%d", *ioActionFlags);
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
     if (!auMgr.isPlaying)
     {
@@ -70,6 +70,8 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
             {
                 memcpy(audioBuffer.mData, playbackData.bytes, consumedByteLength);
                 [playbackData replaceBytesInRange:NSMakeRange(0, consumedByteLength) withBytes:NULL length:0];
+                if (playbackData.length == 0)
+                    NSLog(@"#AudioUnit# AudioData[%d] EOF", iBuffer);
             }
             memset(audioBuffer.mData + consumedByteLength, 0, audioBuffer.mDataByteSize - consumedByteLength);
         }
