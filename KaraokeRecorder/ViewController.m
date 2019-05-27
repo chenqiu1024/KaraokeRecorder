@@ -23,12 +23,12 @@
 
 @implementation ViewController
 
--(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length busNumber:(int)busNumber {
-    for (NSUInteger i=_recordAudioDatas.count; i<=busNumber; ++i)
+-(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length channel:(int)channel {
+    for (NSUInteger i=_recordAudioDatas.count; i<=channel; ++i)
     {
         [_recordAudioDatas addObject:[[NSMutableData alloc] init]];
     }
-    NSMutableData* destBuffer = _recordAudioDatas[busNumber];
+    NSMutableData* destBuffer = _recordAudioDatas[channel];
     [destBuffer appendBytes:data length:length];
 }
 /*
@@ -100,7 +100,7 @@
                 {
                     const float Frequencies[] = {660, 420};
                     static NSUInteger totalSampleCounts[] = {0, 0};
-                    const int samples = 1024;
+                    const int samples = 655360;
                     int16_t* data = (int16_t*) malloc(sizeof(int16_t) * samples);
                     for (int iSample=0; iSample<samples; ++iSample)
                     {
