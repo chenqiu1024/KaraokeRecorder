@@ -20,6 +20,7 @@
 @property (nonatomic, assign) AUGraph auGraph;
 @property (nonatomic, assign) AudioUnit ioUnit;
 @property (nonatomic, assign) AudioBufferList* audioBufferList;
+@property (nonatomic, strong) NSMutableArray<NSMutableData* >* playbackDatas;
 
 @end
 
@@ -46,21 +47,34 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         return noErr;
     }
     
-    const float Frequencies[] = {660, 420};
-    static NSUInteger totalSampleCount = 0;
-    int samples = ioData->mBuffers[0].mDataByteSize / 2;
-    for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
+    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:willFillPlaybackAudioData:length:channel:)])
     {
-        AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
-        if (!audioBuffer.mData) continue;
-        int16_t* pDst = audioBuffer.mData;
-        for (int iSample=0; iSample<samples; ++iSample)
+        for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
         {
-            float phase = Frequencies[iBuffer] * M_PI * 2 * (totalSampleCount + iSample) / auMgr.sampleRate;
-            *(pDst++) = (int16_t) (sinf(phase) * 16384);
+            AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
+            if (!audioBuffer.mData) continue;
+            [auMgr.delegate audioUnitManager:auMgr willFillPlaybackAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:iBuffer];
         }
     }
-    totalSampleCount += samples;
+    else
+    {
+        for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
+        {
+            AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
+            if (!audioBuffer.mData) continue;
+            
+            NSMutableData* playbackData = (auMgr.playbackDatas && iBuffer < auMgr.playbackDatas.count) ? auMgr.playbackDatas[iBuffer] : nil;
+            int consumedByteLength = playbackData ? (int)playbackData.length : 0;
+            consumedByteLength = consumedByteLength < audioBuffer.mDataByteSize ? consumedByteLength : audioBuffer.mDataByteSize;
+            if (consumedByteLength)
+            {
+                memcpy(audioBuffer.mData, playbackData.bytes, consumedByteLength);
+                [playbackData replaceBytesInRange:NSMakeRange(0, consumedByteLength) withBytes:NULL length:0];
+            }
+            memset(audioBuffer.mData + consumedByteLength, 0, audioBuffer.mDataByteSize - consumedByteLength);
+        }
+    }
+    
     return noErr;
 }
 
@@ -100,11 +114,11 @@ static OSStatus InputCallbackProc(void* inRefCon
         }
     }
     OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
-    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManagerDidReceiveAudioData:length:busNumber:)])
+    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
     {
         for (int i=0; i<numBuffers; ++i)
         {
-            [auMgr.delegate audioUnitManagerDidReceiveAudioData:auMgr.audioBufferList->mBuffers[i].mData length:auMgr.audioBufferList->mBuffers[i].mDataByteSize busNumber:i];
+            [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:auMgr.audioBufferList->mBuffers[i].mData length:auMgr.audioBufferList->mBuffers[i].mDataByteSize channel:i];
             
         }
     }
@@ -142,6 +156,8 @@ static OSStatus InputCallbackProc(void* inRefCon
         free(&_audioBufferList->mBuffers[i]);
     }
     free(_audioBufferList);
+    
+    _playbackDatas = nil;
     
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
@@ -289,6 +305,10 @@ static OSStatus InputCallbackProc(void* inRefCon
 
 -(void) stopPlaying {
     _isPlaying = NO;
+    if (_playbackDatas)
+    {
+        _playbackDatas = nil;
+    }
     [self stopAUGraphIfNecessary];
 }
 
@@ -300,6 +320,17 @@ static OSStatus InputCallbackProc(void* inRefCon
 -(void) stopRecording {
     _isRecording = NO;
     [self stopAUGraphIfNecessary];
+}
+
+-(void) addAudioData:(void*)data length:(int)length channel:(int)channel {
+    if (!_isPlaying) return;
+    if (!_playbackDatas) _playbackDatas = [[NSMutableArray alloc] init];
+    for (NSUInteger i=_playbackDatas.count; i<=channel; ++i)
+    {
+        [_playbackDatas addObject:[[NSMutableData alloc] init]];
+    }
+    NSMutableData* destData = _playbackDatas[channel];
+    [destData appendBytes:data length:length];
 }
 
 -(void) dealloc {

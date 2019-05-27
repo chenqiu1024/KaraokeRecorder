@@ -10,10 +10,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class AudioUnitManager;
 @protocol AudioUnitManagerDelegate <NSObject>
 
--(void) audioUnitManagerDidReceiveAudioData:(void*)data length:(int)length busNumber:(int)busNumber;
-//-(void) audioUnitManagerDidStopRecording;
+-(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length channel:(int)channel;
+
+-(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel;
 
 @end
 
@@ -22,11 +24,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong) id<AudioUnitManagerDelegate> delegate;
 
+@property (nonatomic, assign, readonly) float sampleRate;
+
 -(void) startPlaying;
 -(void) stopPlaying;
 
 -(void) startRecording;
 -(void) stopRecording;
+
+-(void) addAudioData:(void*)data length:(int)length channel:(int)channel;
 
 @end
 

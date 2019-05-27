@@ -22,13 +22,26 @@
 
 @implementation ViewController
 
--(void) audioUnitManagerDidReceiveAudioData:(void *)data length:(int)length busNumber:(int)busNumber {
+-(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length busNumber:(int)busNumber {
     for (NSUInteger i=_recordAudioDatas.count; i<=busNumber; ++i)
     {
         [_recordAudioDatas addObject:[[NSMutableData alloc] init]];
     }
     NSMutableData* destBuffer = _recordAudioDatas[busNumber];
     [destBuffer appendBytes:data length:length];
+}
+
+-(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
+    const float Frequencies[] = {660, 420};
+    static NSUInteger totalSampleCounts[] = {0, 0};
+    int samples = length / 2;
+    int16_t* pDst = data;
+    for (int iSample=0; iSample<samples; ++iSample)
+    {
+        float phase = Frequencies[channel] * M_PI * 2 * (totalSampleCounts[channel] + iSample) / auMgr.sampleRate;
+        *(pDst++) = (int16_t) (sinf(phase) * 16384);
+    }
+    totalSampleCounts[channel] += samples;
 }
 
 - (void)viewDidLoad {
