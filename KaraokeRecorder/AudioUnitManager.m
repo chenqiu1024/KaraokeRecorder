@@ -12,11 +12,13 @@
 @interface AudioUnitManager ()
 
 @property (nonatomic, assign) BOOL isPlaying;
+@property (nonatomic, assign) BOOL isRecording;
+
 @property (nonatomic, assign) float sampleRate;
 
 @property (nonatomic, assign) AUGraph auGraph;
 @property (nonatomic, assign) AudioUnit ioUnit;
-
+@property (nonatomic, assign) AudioBufferList* audioBufferList;
 
 @end
 
@@ -61,6 +63,38 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     return noErr;
 }
 
+static OSStatus InputCallbackProc(void* inRefCon
+                                     , AudioUnitRenderActionFlags* ioActionFlags
+                                     , const AudioTimeStamp* inTimeStamp
+                                     , UInt32 inBusNumber
+                                     , UInt32 inNumberFrames
+                                     , AudioBufferList* __nullable ioData) {
+    AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
+    int numBuffers = 3;
+    if (!auMgr.audioBufferList)
+    {
+        auMgr.audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
+        auMgr.audioBufferList->mNumberBuffers = numBuffers;
+    }
+    for (int i=0; i<numBuffers; ++i)
+    {
+        auMgr.audioBufferList->mBuffers[i].mNumberChannels = 1;
+        if (auMgr.audioBufferList->mBuffers[i].mDataByteSize < inNumberFrames * 2)
+        {
+            auMgr.audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * 2;
+            if (auMgr.audioBufferList->mBuffers[i].mData)
+            {
+                free(auMgr.audioBufferList->mBuffers[i].mData);
+            }
+            auMgr.audioBufferList->mBuffers[i].mData = malloc(auMgr.audioBufferList->mBuffers[i].mDataByteSize);
+        }
+    }
+    
+    OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    return noErr;
+}
+
 @implementation AudioUnitManager
 
 -(void) close {
@@ -70,10 +104,26 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     AUGraphStop(_auGraph);
     AUGraphClose(_auGraph);
     _auGraph = NULL;
+    
+    for (int i=0; i<_audioBufferList->mNumberBuffers; ++i)
+    {
+        free(&_audioBufferList->mBuffers[i]);
+    }
+    free(_audioBufferList);
 }
 
 -(void) open {
     _sampleRate = 8000.f;
+    
+    int numBuffers = 3;
+    _audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
+    _audioBufferList->mNumberBuffers = numBuffers;
+    for (int i=0; i<numBuffers; ++i)
+    {
+        _audioBufferList->mBuffers[i].mNumberChannels = 1;
+        _audioBufferList->mBuffers[i].mDataByteSize = 4096;
+        _audioBufferList->mBuffers[i].mData = malloc(_audioBufferList->mBuffers[i].mDataByteSize);
+    }
     
     AVAudioSession* audioSession = [AVAudioSession sharedInstance];
     [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionInterruptionNotification object:audioSession queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
@@ -138,8 +188,8 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     UInt32 flag = 1;
-//    result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &flag, sizeof(flag));
-//    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &flag, sizeof(flag));
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &flag, sizeof(flag));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioInputASBD, sizeof(ioInputASBD));
@@ -147,12 +197,21 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     // kAudioUnitScope_Input of element 0 of IO unit represents the input of Speaker:
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioOutputASBD, sizeof(ioOutputASBD));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+//    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
+//    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     AURenderCallbackStruct playbackCallback;
     playbackCallback.inputProc = PlaybackCallbackProc;
     playbackCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-//    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &playbackCallback, sizeof(playbackCallback));
-    result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &playbackCallback);
+    // Both the following 2 lines work for output:
+    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &playbackCallback, sizeof(playbackCallback));
+//    result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &playbackCallback);
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
+    AURenderCallbackStruct inputCallback;
+    inputCallback.inputProc = InputCallbackProc;
+    inputCallback.inputProcRefCon = (__bridge void* _Nullable) self;
+    result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &inputCallback, sizeof(inputCallback));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     result = AUGraphInitialize(_auGraph);
