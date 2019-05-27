@@ -114,6 +114,21 @@ static OSStatus InputCallbackProc(void* inRefCon
 
 @implementation AudioUnitManager
 
+-(void) onRouteChangeNotification:(NSNotification*)note {
+    int reason = [[note.userInfo valueForKey:AVAudioSessionRouteChangeReasonKey] intValue];
+    AVAudioSessionRouteDescription* previousRoute = (AVAudioSessionRouteDescription*) [note.userInfo valueForKey:AVAudioSessionRouteChangePreviousRouteKey];
+    if (AVAudioSessionRouteChangeReasonOldDeviceUnavailable == reason)
+    {
+        //获取上一线路描述信息并获取上一线路的输出设备类型
+        AVAudioSessionPortDescription* previousOutput = previousRoute.outputs[0];
+        NSString* portType = previousOutput.portType;
+        if ([portType isEqualToString:AVAudioSessionPortHeadphones])
+        {
+            [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker error:nil];
+        }
+    }
+}
+
 -(void) close {
     if (!_auGraph)
         return;
@@ -127,6 +142,8 @@ static OSStatus InputCallbackProc(void* inRefCon
         free(&_audioBufferList->mBuffers[i]);
     }
     free(_audioBufferList);
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 -(void) open {
@@ -214,7 +231,10 @@ static OSStatus InputCallbackProc(void* inRefCon
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     CAShow(_auGraph);
     
+    // Set AVAudioSessionRouteChangeNotification handler:
+    // Set AVAudioSession;
     AVAudioSession* audioSession = [AVAudioSession sharedInstance];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onRouteChangeNotification:) name:AVAudioSessionRouteChangeNotification object:audioSession];
     [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionInterruptionNotification object:audioSession queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
         int reason = [[note.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
         switch (reason)
