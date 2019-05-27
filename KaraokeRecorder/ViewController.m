@@ -11,9 +11,10 @@
 
 @interface ViewController () <AudioUnitManagerDelegate>
 {
-    AudioUnitManager* _auMgr;
     NSMutableArray<NSMutableData* >* _recordAudioDatas;
 }
+
+@property (nonatomic, strong) AudioUnitManager* auMgr;
 
 -(IBAction)onRecordButtonPressed:(id)sender;
 -(IBAction)onPlayButtonPressed:(id)sender;
@@ -30,7 +31,7 @@
     NSMutableData* destBuffer = _recordAudioDatas[busNumber];
     [destBuffer appendBytes:data length:length];
 }
-
+/*
 -(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
     const float Frequencies[] = {660, 420};
     static NSUInteger totalSampleCounts[] = {0, 0};
@@ -43,7 +44,7 @@
     }
     totalSampleCounts[channel] += samples;
 }
-
+//*/
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
@@ -84,6 +85,36 @@
     if (0 == button.tag)
     {
         [_auMgr startPlaying];
+        
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            NSString* docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+            for (int i=0; i<2; ++i)
+            {
+                NSString* srcPath = [docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"channel%d.pcm", i]];
+                if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
+                {
+                    NSData* data = [NSData dataWithContentsOfFile:srcPath];
+                    [self.auMgr addAudioData:(void*)data.bytes length:(int)data.length channel:i];
+                }
+                else
+                {
+                    const float Frequencies[] = {660, 420};
+                    static NSUInteger totalSampleCounts[] = {0, 0};
+                    const int samples = 1024;
+                    int16_t* data = (int16_t*) malloc(sizeof(int16_t) * samples);
+                    for (int iSample=0; iSample<samples; ++iSample)
+                    {
+                        float phase = Frequencies[i] * M_PI * 2 * (totalSampleCounts[i] + iSample) / self.auMgr.sampleRate;
+                        data[iSample] = (int16_t) (sinf(phase) * 16384);
+                    }
+                    totalSampleCounts[i] += samples;
+                    
+                    [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:i];
+                    free(data);
+                }
+            }
+        });
+        
         button.tag = 1;
         [button setTitle:@"Stop Playing" forState:UIControlStateNormal];
     }
