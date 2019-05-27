@@ -70,12 +70,13 @@ static OSStatus InputCallbackProc(void* inRefCon
                                      , UInt32 inNumberFrames
                                      , AudioBufferList* __nullable ioData) {
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
-    int numBuffers = 3;
+    int numBuffers = 1;
     if (!auMgr.audioBufferList)
     {
         auMgr.audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
         auMgr.audioBufferList->mNumberBuffers = numBuffers;
     }
+    auMgr.audioBufferList->mNumberBuffers = numBuffers;
     for (int i=0; i<numBuffers; ++i)
     {
         auMgr.audioBufferList->mBuffers[i].mNumberChannels = 1;
@@ -87,11 +88,15 @@ static OSStatus InputCallbackProc(void* inRefCon
                 free(auMgr.audioBufferList->mBuffers[i].mData);
             }
             auMgr.audioBufferList->mBuffers[i].mData = malloc(auMgr.audioBufferList->mBuffers[i].mDataByteSize);
+            memset(auMgr.audioBufferList->mBuffers[i].mData, 0, auMgr.audioBufferList->mBuffers[i].mDataByteSize);
+        }
+        else
+        {
+            auMgr.audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * 2;
         }
     }
-    
     OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
-    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    //NSLog(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
     return noErr;
 }
 
@@ -115,7 +120,7 @@ static OSStatus InputCallbackProc(void* inRefCon
 -(void) open {
     _sampleRate = 8000.f;
     
-    int numBuffers = 3;
+    int numBuffers = 1;
     _audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
     _audioBufferList->mNumberBuffers = numBuffers;
     for (int i=0; i<numBuffers; ++i)
@@ -123,33 +128,8 @@ static OSStatus InputCallbackProc(void* inRefCon
         _audioBufferList->mBuffers[i].mNumberChannels = 1;
         _audioBufferList->mBuffers[i].mDataByteSize = 4096;
         _audioBufferList->mBuffers[i].mData = malloc(_audioBufferList->mBuffers[i].mDataByteSize);
+        memset(_audioBufferList->mBuffers[i].mData, 0, _audioBufferList->mBuffers[i].mDataByteSize);
     }
-    
-    AVAudioSession* audioSession = [AVAudioSession sharedInstance];
-    [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionInterruptionNotification object:audioSession queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
-        int reason = [[note.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
-        switch (reason)
-        {
-            case AVAudioSessionInterruptionTypeBegan:
-                [audioSession setActive:NO error:nil];
-                break;
-            case AVAudioSessionInterruptionTypeEnded:
-                [audioSession setActive:YES error:nil];
-                break;
-            default:
-                break;
-        }
-    }];
-    
-    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowBluetoothA2DP error:nil];
-    [audioSession setPreferredSampleRate:_sampleRate error:nil];
-    [audioSession setPreferredIOBufferDuration:0.064 error:nil];
-    /* Only valid with AVAudioSessionCategoryPlayAndRecord.  Appropriate for Voice over IP
-     (VoIP) applications.  Reduces the number of allowable audio routes to be only those
-     that are appropriate for VoIP applications and may engage appropriate system-supplied
-     signal processing.  Has the side effect of setting AVAudioSessionCategoryOptionAllowBluetooth */
-    [audioSession setMode:AVAudioSessionModeVoiceChat error:nil];
-    [audioSession setActive:YES error:nil];
     
     AudioStreamBasicDescription ioInputASBD;
     ioInputASBD.mSampleRate = _sampleRate;
@@ -192,13 +172,17 @@ static OSStatus InputCallbackProc(void* inRefCon
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &flag, sizeof(flag));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioInputASBD, sizeof(ioInputASBD));
+    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &ioInputASBD, sizeof(ioInputASBD));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // kAudioUnitScope_Input of element 0 of IO unit represents the input of Speaker:
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioOutputASBD, sizeof(ioOutputASBD));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-//    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
-//    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    flag = 0;
+    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
+    UInt32 maximumFramesPerSlick = 1024;
+    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 1, &maximumFramesPerSlick, sizeof(maximumFramesPerSlick));
     
     AURenderCallbackStruct playbackCallback;
     playbackCallback.inputProc = PlaybackCallbackProc;
@@ -218,6 +202,31 @@ static OSStatus InputCallbackProc(void* inRefCon
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     CAShow(_auGraph);
     
+    AVAudioSession* audioSession = [AVAudioSession sharedInstance];
+    [[NSNotificationCenter defaultCenter] addObserverForName:AVAudioSessionInterruptionNotification object:audioSession queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+        int reason = [[note.userInfo valueForKey:AVAudioSessionInterruptionTypeKey] intValue];
+        switch (reason)
+        {
+            case AVAudioSessionInterruptionTypeBegan:
+                [audioSession setActive:NO error:nil];
+                break;
+            case AVAudioSessionInterruptionTypeEnded:
+                [audioSession setActive:YES error:nil];
+                break;
+            default:
+                break;
+        }
+    }];
+    
+    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowBluetoothA2DP error:nil];
+    [audioSession setPreferredSampleRate:_sampleRate error:nil];
+    [audioSession setPreferredIOBufferDuration:0.064 error:nil];
+    /* Only valid with AVAudioSessionCategoryPlayAndRecord.  Appropriate for Voice over IP
+     (VoIP) applications.  Reduces the number of allowable audio routes to be only those
+     that are appropriate for VoIP applications and may engage appropriate system-supplied
+     signal processing.  Has the side effect of setting AVAudioSessionCategoryOptionAllowBluetooth */
+    [audioSession setMode:AVAudioSessionModeVoiceChat error:nil];
+    [audioSession setActive:YES error:nil];
 }
 
 -(void) startPlaying {
