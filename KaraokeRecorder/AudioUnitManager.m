@@ -15,10 +15,13 @@
 @property (nonatomic, assign) BOOL isPlaying;
 @property (nonatomic, assign) BOOL isRecording;
 
-@property (nonatomic, assign) float sampleRate;
+@property (nonatomic, assign) float micphoneSampleRate;
+@property (nonatomic, assign) float audioSourceSampleRate;
+@property (nonatomic, assign) float recorderSampleRate;
 
 @property (nonatomic, assign) AUGraph auGraph;
 @property (nonatomic, assign) AudioUnit ioUnit;
+@property (nonatomic, assign) AudioUnit resamplerUnit;
 @property (nonatomic, assign) AudioBufferList* audioBufferList;
 @property (nonatomic, strong) NSMutableArray<NSMutableData* >* playbackDatas;
 
@@ -106,6 +109,7 @@ static OSStatus InputCallbackProc(void* inRefCon
     if (!auMgr.isRecording)
         return noErr;
     NSLog(@"#AudioUnit# Recording: *ioActionFlags=%d, inBusNumber=%d, inNumberFrames=%d", *ioActionFlags, inBusNumber, inNumberFrames);
+    /*
     int numBuffers = 1;
     if (!auMgr.audioBufferList)
     {
@@ -138,8 +142,33 @@ static OSStatus InputCallbackProc(void* inRefCon
         {
             [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:auMgr.audioBufferList->mBuffers[i].mData length:auMgr.audioBufferList->mBuffers[i].mDataByteSize channel:i];
             
+            static NSUInteger totalBytesLength = 0;
+            if (i == 0)
+            {
+                NSLog(@"#AudioUnit# Recording: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
+                totalBytesLength += auMgr.audioBufferList->mBuffers[i].mDataByteSize;
+            }
         }
     }
+    /*/
+    if (!ioData)
+        return noErr;
+    
+    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+    {
+        for (int i=0; i<ioData->mNumberBuffers; ++i)
+        {
+            [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
+            
+            static NSUInteger totalBytesLength = 0;
+            if (i == 0)
+            {
+                NSLog(@"#AudioUnit# Recording: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
+                totalBytesLength += ioData->mBuffers[i].mDataByteSize;
+            }
+        }
+    }
+    //*/
     //NSLog(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
     return noErr;
 }
@@ -182,7 +211,9 @@ static OSStatus InputCallbackProc(void* inRefCon
 
 -(void) open {
     /// Sample rate 8000Hz is NG for Bluetooth headphone, WHY?
-    _sampleRate = 16000.f;
+    _micphoneSampleRate = 16000.f;
+    _recorderSampleRate = 8000.f;
+    _audioSourceSampleRate = 8000.f;
     
     int numBuffers = 1;
     _audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
@@ -195,26 +226,8 @@ static OSStatus InputCallbackProc(void* inRefCon
         memset(_audioBufferList->mBuffers[i].mData, 0, _audioBufferList->mBuffers[i].mDataByteSize);
     }
     
-    AudioStreamBasicDescription ioInputASBD;
-    ioInputASBD.mSampleRate = _sampleRate;
-    ioInputASBD.mFormatID = kAudioFormatLinearPCM;
-    // kAudioFormatFlagIsNonInterleaved will create 1 AudioBuffer for each channel:
-//    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsNonInterleaved;
-    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
-//    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger;
-    ioInputASBD.mFramesPerPacket = 1;
-    ioInputASBD.mChannelsPerFrame = 1;
-    ioInputASBD.mBitsPerChannel = 16;
-    AudioStreamBasicDescription ioOutputASBD = ioInputASBD;
-    ioOutputASBD.mChannelsPerFrame = 2;
-    
-    ioInputASBD.mBytesPerFrame = ioInputASBD.mBitsPerChannel * ioInputASBD.mChannelsPerFrame / 8;
-    ioInputASBD.mBytesPerPacket = ioInputASBD.mBytesPerFrame * ioInputASBD.mFramesPerPacket;
-    
-    ioOutputASBD.mBytesPerFrame = ioOutputASBD.mBitsPerChannel * ioOutputASBD.mChannelsPerFrame / 8;
-    ioOutputASBD.mBytesPerPacket = ioOutputASBD.mBytesPerFrame * ioOutputASBD.mFramesPerPacket;
-    
-    AudioComponentDescription ioACDesc;
+    // Set all AudioComponentDescription(s):
+    AudioComponentDescription ioACDesc, resamplerACDesc;
     ioACDesc.componentType = kAudioUnitType_Output;
     // kAudioUnitSubType_VoiceProcessingIO enables echo cancellation, but mixes the stero channels as mono sound
     ioACDesc.componentSubType = kAudioUnitSubType_VoiceProcessingIO;
@@ -223,15 +236,31 @@ static OSStatus InputCallbackProc(void* inRefCon
     ioACDesc.componentFlags = 0;
     ioACDesc.componentFlagsMask = 0;
     
+    resamplerACDesc.componentType = kAudioUnitType_FormatConverter;
+    resamplerACDesc.componentSubType = kAudioUnitSubType_AUConverter;
+    resamplerACDesc.componentFlags = 0;
+    resamplerACDesc.componentFlagsMask = 0;
+    resamplerACDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+    
+    // Create the AUGraph:
     OSStatus result;
-    AUNode ioNode;
+    AUNode ioNode, resamplerNode;
     result = NewAUGraph(&_auGraph);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    // Add AUNode(s):
     result = AUGraphAddNode(_auGraph, &ioACDesc, &ioNode);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AUGraphAddNode(_auGraph, &resamplerACDesc, &resamplerNode);
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    // Connect the nodes:
+    AUGraphConnectNodeInput(_auGraph, ioNode, 1, resamplerNode, 0);
+    // Open the AUGraph, but it is not initialized(allocate resources) at this point:
     result = AUGraphOpen(_auGraph);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    // Get the AudioUnit info:
     result = AUGraphNodeInfo(_auGraph, ioNode, &ioACDesc, &_ioUnit);
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AUGraphNodeInfo(_auGraph, resamplerNode, &resamplerACDesc, &_resamplerUnit);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     UInt32 flag = 1;
@@ -239,11 +268,40 @@ static OSStatus InputCallbackProc(void* inRefCon
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &flag, sizeof(flag));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
+    // Set all AudioStreamBasicDescription(s):
+    AudioStreamBasicDescription ioInputASBD;
+    ioInputASBD.mSampleRate = _micphoneSampleRate;
+    ioInputASBD.mFormatID = kAudioFormatLinearPCM;
+    // kAudioFormatFlagIsNonInterleaved will create 1 AudioBuffer for each channel, while kAudioFormatFlagIsPacked will create 1 interleaved AudioBuffer for all 2 channels:
+    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+    ioInputASBD.mFramesPerPacket = 1;
+    ioInputASBD.mChannelsPerFrame = 1;
+    ioInputASBD.mBitsPerChannel = 16;
+    
+    ioInputASBD.mBytesPerFrame = ioInputASBD.mBitsPerChannel * ioInputASBD.mChannelsPerFrame / 8;
+    ioInputASBD.mBytesPerPacket = ioInputASBD.mBytesPerFrame * ioInputASBD.mFramesPerPacket;
+    
+    AudioStreamBasicDescription ioOutputASBD = ioInputASBD;
+    ioOutputASBD.mSampleRate = _audioSourceSampleRate;
+    ioOutputASBD.mChannelsPerFrame = 2;
+    ioOutputASBD.mBytesPerFrame = ioOutputASBD.mBitsPerChannel * ioOutputASBD.mChannelsPerFrame / 8;
+    ioOutputASBD.mBytesPerPacket = ioOutputASBD.mBytesPerFrame * ioOutputASBD.mFramesPerPacket;
+    
+    AudioStreamBasicDescription resamplerOutputASBD = ioInputASBD;
+    resamplerOutputASBD.mSampleRate = _recorderSampleRate;
+    
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &ioInputASBD, sizeof(ioInputASBD));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // kAudioUnitScope_Input of element 0 of IO unit represents the input of Speaker:
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioOutputASBD, sizeof(ioOutputASBD));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AudioUnitSetProperty(_resamplerUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioInputASBD, sizeof(ioInputASBD));
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AudioUnitSetProperty(_resamplerUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &resamplerOutputASBD, sizeof(resamplerOutputASBD));
+    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
+    // Not quite clear about what these settings are for:
     flag = 0;
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
@@ -259,10 +317,11 @@ static OSStatus InputCallbackProc(void* inRefCon
 //    result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &playbackCallback);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
-    AURenderCallbackStruct inputCallback;
-    inputCallback.inputProc = InputCallbackProc;
-    inputCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-    result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &inputCallback, sizeof(inputCallback));
+//    AURenderCallbackStruct inputCallback;
+//    inputCallback.inputProc = InputCallbackProc;
+//    inputCallback.inputProcRefCon = (__bridge void* _Nullable) self;
+//    result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &inputCallback, sizeof(inputCallback));
+    result = AudioUnitAddRenderNotify(_resamplerUnit, InputCallbackProc, (__bridge void* _Nullable) self);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     result = AUGraphInitialize(_auGraph);
@@ -289,7 +348,7 @@ static OSStatus InputCallbackProc(void* inRefCon
     }];
     
     [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowBluetoothA2DP error:nil];
-    [audioSession setPreferredSampleRate:_sampleRate error:nil];
+    [audioSession setPreferredSampleRate:_micphoneSampleRate error:nil];
     [audioSession setPreferredIOBufferDuration:0.064 error:nil];
     /* Only valid with AVAudioSessionCategoryPlayAndRecord.  Appropriate for Voice over IP
      (VoIP) applications.  Reduces the number of allowable audio routes to be only those

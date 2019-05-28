@@ -108,7 +108,7 @@
                 {
                     for (int iC=0; iC<2; ++iC)
                     {
-                        float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / self.auMgr.sampleRate;
+                        float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / self.auMgr.audioSourceSampleRate;
                         *(pDst++) = (int16_t) (sinf(phase) * 16384);
                     }
                 }
