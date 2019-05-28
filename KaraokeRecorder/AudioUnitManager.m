@@ -105,7 +105,7 @@ static OSStatus InputCallbackProc(void* inRefCon
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
     if (!auMgr.isRecording)
         return noErr;
-    
+    NSLog(@"#AudioUnit# Recording: *ioActionFlags=%d, inBusNumber=%d, inNumberFrames=%d", *ioActionFlags, inBusNumber, inNumberFrames);
     int numBuffers = 1;
     if (!auMgr.audioBufferList)
     {
@@ -181,7 +181,8 @@ static OSStatus InputCallbackProc(void* inRefCon
 }
 
 -(void) open {
-    _sampleRate = 8000.f;
+    /// Sample rate 8000Hz is NG for Bluetooth headphone, WHY?
+    _sampleRate = 16000.f;
     
     int numBuffers = 1;
     _audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
@@ -247,8 +248,8 @@ static OSStatus InputCallbackProc(void* inRefCon
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
-    UInt32 maximumFramesPerSlick = 1024;
-    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 1, &maximumFramesPerSlick, sizeof(maximumFramesPerSlick));
+    UInt32 maximumFramesPerSlice = 1024;
+    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 1, &maximumFramesPerSlice, sizeof(maximumFramesPerSlice));
     
     AURenderCallbackStruct playbackCallback;
     playbackCallback.inputProc = PlaybackCallbackProc;
