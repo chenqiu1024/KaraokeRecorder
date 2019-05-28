@@ -154,8 +154,8 @@ static OSStatus InputCallbackProc(void* inRefCon
     // If not in kAudioUnitRenderAction_PostRender state, will be infinitely recursive calling:
     //if ((*ioActionFlags & kAudioUnitRenderAction_PreRender))
     //    return noErr;
-    //if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
-    //    return noErr;
+    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
+        return noErr;
     //*
     AudioUnitRenderActionFlags actionFlags = kAudioUnitRenderAction_PostRender;
     AudioTimeStamp timeStamp = *inTimeStamp;
@@ -285,7 +285,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
 
 -(void) open {
     /// Sample rate 8000Hz is NG for Bluetooth headphone, WHY?
-    _micphoneSampleRate = 8000.f;
+    _micphoneSampleRate = 16000.f;
     _recorderSampleRate = 8000.f;
     _audioSourceSampleRate = 8000.f;
     
@@ -394,8 +394,8 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     AURenderCallbackStruct inputCallback;
     inputCallback.inputProc = InputCallbackProc;
     inputCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-    result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &inputCallback, sizeof(inputCallback));
-    //result = AudioUnitAddRenderNotify(_ioUnit, InputCallbackProc, (__bridge void* _Nullable) self);
+    //result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &inputCallback, sizeof(inputCallback));
+    result = AudioUnitAddRenderNotify(_ioUnit, InputCallbackProc, (__bridge void* _Nullable) self);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitAddRenderNotify(_resamplerUnit, ResampleCallbackProc, (__bridge void* _Nullable) self);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
