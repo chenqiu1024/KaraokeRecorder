@@ -51,8 +51,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
-    _auMgr = [[AudioUnitManager alloc] init];
-    _auMgr.delegate = self;
+    _auMgr = [AudioUnitManager sharedInstance];
 }
 
 -(IBAction)onRecordButtonPressed:(id)sender {
@@ -61,7 +60,7 @@
     {
         _recordAudioDatas = [[NSMutableArray alloc] init];
         
-        [_auMgr startRecording];
+        [_auMgr startRecording:self];
         
         button.tag = 1;
         [button setTitle:@"Stop Recording" forState:UIControlStateNormal];

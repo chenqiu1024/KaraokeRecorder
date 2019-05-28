@@ -474,6 +474,12 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     [self startAUGraphIfNecessary];
 }
 
+-(void) startRecording:(id<AudioUnitManagerDelegate>)delegate {
+    _delegate = delegate;
+    _isRecording = YES;
+    [self startAUGraphIfNecessary];
+}
+
 -(void) stopRecording {
     _isRecording = NO;
     [self stopAUGraphIfNecessary];
@@ -496,7 +502,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     return ret;
 }
 
--(void) addAudioData:(void*)data length:(int)length channel:(int)channel {
+-(void) addAudioData:(const void*)data length:(NSUInteger)length channel:(int)channel {
     if (!_isPlaying) return;
     if (!_playbackDatas) _playbackDatas = [[NSMutableArray alloc] init];
     for (NSUInteger i=_playbackDatas.count; i<=channel; ++i)
@@ -505,6 +511,11 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     }
     NSMutableData* destData = _playbackDatas[channel];
     [destData appendBytes:data length:length];
+}
+
+-(void) addAudioData:(NSData*)monoData {
+    NSData* steroData = [AudioUnitManager makeInterleavedSteroAudioDataFromMonoData:monoData.bytes length:monoData.length];
+    [self addAudioData:steroData.bytes length:steroData.length channel:0];
 }
 
 -(void) dealloc {
@@ -520,6 +531,15 @@ static OSStatus ResampleCallbackProc(void* inRefCon
         [self open];
     }
     return self;
+}
+
++(instancetype) sharedInstance {
+    static AudioUnitManager* singleton = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        singleton = [[AudioUnitManager alloc] init];
+    });
+    return singleton;
 }
 
 @end

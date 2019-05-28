@@ -29,15 +29,22 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign, readonly) float audioSourceSampleRate;
 @property (nonatomic, assign, readonly) float recorderSampleRate;
 
++(instancetype) sharedInstance;
+
 -(void) startPlaying;
 -(void) stopPlaying;
 
--(void) startRecording;
+-(void) startRecording:(id<AudioUnitManagerDelegate>)delegate;
 -(void) stopRecording;
 
--(void) addAudioData:(void*)data length:(int)length channel:(int)channel;
+-(void) addAudioData:(NSData*)monoData;
+
+-(void) addAudioData:(const void*)data length:(NSUInteger)length channel:(int)channel;
 
 +(NSData*) makeInterleavedSteroAudioDataFromMonoData:(const void*)data length:(NSUInteger)length;
+
+-(void) startAUGraphIfNecessary;
+-(void) stopAUGraphIfNecessary;
 
 @end
 
