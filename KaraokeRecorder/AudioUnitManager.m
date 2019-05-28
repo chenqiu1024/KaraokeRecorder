@@ -158,9 +158,12 @@ static OSStatus InputCallbackProc(void* inRefCon
     //    return noErr;
     //*
     AudioUnitRenderActionFlags actionFlags = kAudioUnitRenderAction_PostRender;
-    ///OSStatus result = AudioUnitRender(auMgr.resamplerUnit, &actionFlags, inTimeStamp, 0, inNumberFrames, auMgr.audioBufferList);
-    OSStatus result = AudioUnitRender(auMgr.resamplerUnit, ioActionFlags, inTimeStamp, 0, inNumberFrames, auMgr.audioBufferList);
-    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    AudioTimeStamp timeStamp = *inTimeStamp;
+    //timeStamp.mRateScalar *= 2;
+    //inNumberFrames *= 2;
+    OSStatus result = AudioUnitRender(auMgr.resamplerUnit, &actionFlags, &timeStamp, 0, inNumberFrames, auMgr.audioBufferList);
+    //OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
+    NSLog(@"result=%d, inTimeStamp->mSampleTime=%f, inNumberFrames=%d. at %d in %s", result, inTimeStamp->mSampleTime, inNumberFrames, __LINE__, __PRETTY_FUNCTION__);
     //*/
     //NSLog(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
     return noErr;
@@ -373,11 +376,11 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     // Not quite clear about what these settings are for:
-    flag = 0;
-    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
-    NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    //flag = 0;
+    //result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, 1, &flag, sizeof(flag));
+    //NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
-    UInt32 maximumFramesPerSlice = 1024;
+    UInt32 maximumFramesPerSlice = 2048;
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 1, &maximumFramesPerSlice, sizeof(maximumFramesPerSlice));
     
     AURenderCallbackStruct playbackCallback;
