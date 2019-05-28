@@ -35,6 +35,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(void) addAudioData:(void*)data length:(int)length channel:(int)channel;
 
++(NSData*) makeInterleavedSteroAudioDataFromMonoData:(const void*)data length:(NSUInteger)length;
+
 @end
 
 NS_ASSUME_NONNULL_END

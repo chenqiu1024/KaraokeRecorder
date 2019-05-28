@@ -52,8 +52,16 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
         {
             AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
+            NSLog(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
             if (!audioBuffer.mData) continue;
             [auMgr.delegate audioUnitManager:auMgr willFillPlaybackAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:iBuffer];
+            
+            static NSUInteger totalBytesLength = 0;
+            if (iBuffer == 0)
+            {
+                NSLog(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
+                totalBytesLength += audioBuffer.mDataByteSize;
+            }
         }
     }
     else
@@ -62,7 +70,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         {
             AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
             if (!audioBuffer.mData) continue;
-            
+            NSLog(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
             NSMutableData* playbackData = (auMgr.playbackDatas && iBuffer < auMgr.playbackDatas.count) ? auMgr.playbackDatas[iBuffer] : nil;
             int consumedByteLength = playbackData ? (int)playbackData.length : 0;
             consumedByteLength = consumedByteLength < audioBuffer.mDataByteSize ? consumedByteLength : audioBuffer.mDataByteSize;
@@ -70,10 +78,18 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
             {
                 memcpy(audioBuffer.mData, playbackData.bytes, consumedByteLength);
                 [playbackData replaceBytesInRange:NSMakeRange(0, consumedByteLength) withBytes:NULL length:0];
+                
                 if (playbackData.length == 0)
                     NSLog(@"#AudioUnit# AudioData[%d] EOF", iBuffer);
             }
             memset(audioBuffer.mData + consumedByteLength, 0, audioBuffer.mDataByteSize - consumedByteLength);
+
+            static NSUInteger totalBytesLength = 0;
+            if (iBuffer == 0)
+            {
+                NSLog(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
+                totalBytesLength += audioBuffer.mDataByteSize;
+            }
         }
     }
     
@@ -182,7 +198,9 @@ static OSStatus InputCallbackProc(void* inRefCon
     ioInputASBD.mSampleRate = _sampleRate;
     ioInputASBD.mFormatID = kAudioFormatLinearPCM;
     // kAudioFormatFlagIsNonInterleaved will create 1 AudioBuffer for each channel:
-    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsNonInterleaved;
+//    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsNonInterleaved;
+    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+//    ioInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger;
     ioInputASBD.mFramesPerPacket = 1;
     ioInputASBD.mChannelsPerFrame = 1;
     ioInputASBD.mBitsPerChannel = 16;
@@ -199,6 +217,7 @@ static OSStatus InputCallbackProc(void* inRefCon
     ioACDesc.componentType = kAudioUnitType_Output;
     // kAudioUnitSubType_VoiceProcessingIO enables echo cancellation, but mixes the stero channels as mono sound
     ioACDesc.componentSubType = kAudioUnitSubType_VoiceProcessingIO;
+//    ioACDesc.componentSubType = kAudioUnitSubType_RemoteIO;
     ioACDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
     ioACDesc.componentFlags = 0;
     ioACDesc.componentFlagsMask = 0;
@@ -322,6 +341,23 @@ static OSStatus InputCallbackProc(void* inRefCon
 -(void) stopRecording {
     _isRecording = NO;
     [self stopAUGraphIfNecessary];
+}
+
++(NSData*) makeInterleavedSteroAudioDataFromMonoData:(const void*)data length:(NSUInteger)length {
+    NSUInteger samples = length / sizeof(int16_t);
+    int16_t* interleavedData = (int16_t*) malloc(length * 2);
+    int16_t* pDst = interleavedData + samples * 2 - 2;
+    const int16_t* pSrc = (const int16_t*)data + samples - 1;
+    for (NSUInteger i=samples; i>0; --i)
+    {
+        pDst[0] = *pSrc;
+        pDst[1] = *pSrc;
+        pDst -= 2;
+        pSrc -= 1;
+    }
+    NSData* ret = [NSData dataWithBytes:interleavedData length:length * 2];
+    free(interleavedData);
+    return ret;
 }
 
 -(void) addAudioData:(void*)data length:(int)length channel:(int)channel {

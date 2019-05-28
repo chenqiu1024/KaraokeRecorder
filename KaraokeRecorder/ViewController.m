@@ -37,12 +37,14 @@
     static NSUInteger totalSampleCounts[] = {0, 0};
     int samples = length / 2;
     int16_t* pDst = data;
-    for (int iSample=0; iSample<samples; ++iSample)
+    for (int iSample=0; iSample<samples; iSample+=2)
     {
-        float phase = Frequencies[channel] * M_PI * 2 * (totalSampleCounts[channel] + iSample) / auMgr.sampleRate;
-        *(pDst++) = (int16_t) (sinf(phase) * 16384);
+        for (int iC=0; iC<2; ++iC)
+        {
+            float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / auMgr.sampleRate;
+            *(pDst++) = (int16_t) (sinf(phase) * 16384);
+        }
     }
-    totalSampleCounts[channel] += samples;
 }
 //*/
 - (void)viewDidLoad {
@@ -88,30 +90,31 @@
         NSLog(@"#AudioUnit# Start playing");
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             NSString* docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
-            for (int i=0; i<2; ++i)
+            NSString* srcPath = [docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"channel%d.pcm", 0]];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
             {
-                NSString* srcPath = [docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"channel%d.pcm", i]];
-                if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
+                NSData* data = [NSData dataWithContentsOfFile:srcPath];
+                data = [AudioUnitManager makeInterleavedSteroAudioDataFromMonoData:data.bytes length:data.length];
+                [self.auMgr addAudioData:(void*)data.bytes length:(int)data.length channel:0];
+            }
+            else
+            {
+                const float Frequencies[] = {660, 420};
+                static NSUInteger totalSampleCounts[] = {0, 0};
+                int samples = 65536;
+                void* data = malloc(samples * 2);
+                int16_t* pDst = data;
+                for (int iSample=0; iSample<samples; iSample+=2)
                 {
-                    NSData* data = [NSData dataWithContentsOfFile:srcPath];
-                    [self.auMgr addAudioData:(void*)data.bytes length:(int)data.length channel:i];
-                }
-                else
-                {
-                    const float Frequencies[] = {660, 420};
-                    static NSUInteger totalSampleCounts[] = {0, 0};
-                    const int samples = 655360;
-                    int16_t* data = (int16_t*) malloc(sizeof(int16_t) * samples);
-                    for (int iSample=0; iSample<samples; ++iSample)
+                    for (int iC=0; iC<2; ++iC)
                     {
-                        float phase = Frequencies[i] * M_PI * 2 * (totalSampleCounts[i] + iSample) / self.auMgr.sampleRate;
-                        data[iSample] = (int16_t) (sinf(phase) * 16384);
+                        float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / self.auMgr.sampleRate;
+                        *(pDst++) = (int16_t) (sinf(phase) * 16384);
                     }
-                    totalSampleCounts[i] += samples;
-                    
-                    [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:i];
-                    free(data);
                 }
+                
+                [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:0];
+                free(data);
             }
         });
         
