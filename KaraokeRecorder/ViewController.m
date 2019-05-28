@@ -24,6 +24,7 @@
 @implementation ViewController
 
 -(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length channel:(int)channel {
+    NSLog(@"#AudioUnit# Delegate: didReceiveAudioData 0x%lx %d bytes", (long)data, length);
     for (NSUInteger i=_recordAudioDatas.count; i<=channel; ++i)
     {
         [_recordAudioDatas addObject:[[NSMutableData alloc] init]];
@@ -41,7 +42,7 @@
     {
         for (int iC=0; iC<2; ++iC)
         {
-            float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / auMgr.sampleRate;
+            float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / auMgr.audioSourceSampleRate;
             *(pDst++) = (int16_t) (sinf(phase) * 16384);
         }
     }
