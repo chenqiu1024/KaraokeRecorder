@@ -55,10 +55,14 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
                                      , UInt32 inBusNumber
                                      , UInt32 inNumberFrames
                                      , AudioBufferList* __nullable ioData) {
+    NSLog(@"#AudioUnit# Playback: actionFlags=0x%x, busNumber=%d, frames=%d", *ioActionFlags, inBusNumber, inNumberFrames);
+    if (inBusNumber == 1)
+        return noErr;
+    
     if (!ioData)
         return noErr;
-    NSLog(@"#AudioUnit# Playback: actionFlags=0x%x, bufNumber=%d", *ioActionFlags, inBusNumber);
-    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender) || inBusNumber != 1)
+    
+    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
     {printf("\n#AudioUnit# Playback: return\n");
         return noErr;
     }
@@ -209,7 +213,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
     if (!auMgr.isRecording)
         return noErr;
-    //printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
+    printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
     /*
      int numBuffers = 1;
      if (!auMgr.audioBufferList)
@@ -430,7 +434,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     // Both the following 2 lines work for IO node output:
     //result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &playbackCallback, sizeof(playbackCallback));
     //result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &playbackCallback);
-    result = AudioUnitAddRenderNotify(_ioUnit, PlaybackCallbackProc, (__bridge void* _Nullable) self);
+    result = AudioUnitAddRenderNotify(_resampler1Unit, PlaybackCallbackProc, (__bridge void* _Nullable) self);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     /*
     AURenderCallbackStruct inputCallback;

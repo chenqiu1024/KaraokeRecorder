@@ -32,8 +32,9 @@
     NSMutableData* destBuffer = _recordAudioDatas[channel];
     [destBuffer appendBytes:data length:length];
 }
-//*
+/*
 -(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
+    NSLog(@"#AudioUnit# Delegate: willFillPlaybackAudioData 0x%lx %d bytes", (long)data, length);
     const float Frequencies[] = {660, 420};
     static NSUInteger totalSampleCounts[] = {0, 0};
     int samples = length / 2;
@@ -52,6 +53,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     _auMgr = [AudioUnitManager sharedInstance];
+    _auMgr.delegate = self;
 }
 
 -(IBAction)onRecordButtonPressed:(id)sender {
