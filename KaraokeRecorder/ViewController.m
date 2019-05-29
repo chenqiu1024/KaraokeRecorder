@@ -15,9 +15,11 @@
 }
 
 @property (nonatomic, strong) AudioUnitManager* auMgr;
+@property (nonatomic, strong) IBOutlet UISwitch* waveGeneratorSwitch;
 
 -(IBAction)onRecordButtonPressed:(id)sender;
 -(IBAction)onPlayButtonPressed:(id)sender;
+
 
 @end
 
@@ -32,9 +34,10 @@
     NSMutableData* destBuffer = _recordAudioDatas[channel];
     [destBuffer appendBytes:data length:length];
 }
-/*
--(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
-    NSLog(@"#AudioUnit# Delegate: willFillPlaybackAudioData 0x%lx %d bytes", (long)data, length);
+//*
+-(void) audioUnitManager:(AudioUnitManager*)auMgr postFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
+    NSLog(@"#AudioUnit# Delegate: postFillPlaybackAudioData 0x%lx %d bytes", (long)data, length);
+    if (!_waveGeneratorSwitch.isOn) return;
     const float Frequencies[] = {660, 420};
     static NSUInteger totalSampleCounts[] = {0, 0};
     int samples = length / 2;

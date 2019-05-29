@@ -32,16 +32,32 @@
                                     <action selector="onPlayButtonPressed:" destination="BYZ-38-t0r" eventType="touchUpInside" id="TAZ-4e-66a"/>
                                 </connections>
                             </button>
+                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="fGm-7m-z1t">
+                                <rect key="frame" x="182.5" y="521" width="51" height="31"/>
+                            </switch>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Wave Generator" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Tl4-SL-AWd">
+                                <rect key="frame" x="239.5" y="526" width="124" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="l9c-f1-ybb" firstAttribute="top" secondItem="1lD-4r-bt5" secondAttribute="bottom" constant="20" id="E45-tW-pzT"/>
+                            <constraint firstItem="fGm-7m-z1t" firstAttribute="top" secondItem="l9c-f1-ybb" secondAttribute="bottom" constant="8" id="PCR-DR-x4j"/>
                             <constraint firstItem="1lD-4r-bt5" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="RXm-Tw-vHH"/>
                             <constraint firstItem="1lD-4r-bt5" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="gdZ-N4-Re7"/>
                             <constraint firstItem="l9c-f1-ybb" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="nAn-e1-mOx"/>
+                            <constraint firstItem="Tl4-SL-AWd" firstAttribute="centerY" secondItem="fGm-7m-z1t" secondAttribute="centerY" id="t51-O8-Jm0"/>
+                            <constraint firstItem="Tl4-SL-AWd" firstAttribute="leading" secondItem="fGm-7m-z1t" secondAttribute="trailing" constant="8" id="vuK-Ac-P5U"/>
+                            <constraint firstItem="fGm-7m-z1t" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="vyH-0g-5UQ"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                     </view>
+                    <connections>
+                        <outlet property="waveGeneratorSwitch" destination="fGm-7m-z1t" id="0Iw-2h-PCk"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
