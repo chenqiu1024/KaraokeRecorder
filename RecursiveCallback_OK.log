@@ -1,0 +1,358 @@
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resam#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before #AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resam#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before #AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resam#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before #AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resam#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before #AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resam#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before #AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resam#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before #AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+#AudioUnit#.. Input: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=Silence|PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: Before AudioUnitRender(, 512);
+#AudioUnit#.. Resample: actionFlags=PreRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: actionFlags=PreRender, (bu#AudioUnit#.. Input: return
+#AudioUnit#.. Input: actionFlags=PostRender, (bus, frames)=(1, 1024)
+#AudioUnit#.. Input: Before AudioUnitRender(, 1024);
+#AudioUnit#.. Input: After AudioUnitRender(, 1024)=-50;
+#AudioUnit#.. Resample: actionFlags=PostRender, (bus, frames)=(0, 512)
+#AudioUnit#.. Input: After AudioUnitRender(, 512)=0;
+
