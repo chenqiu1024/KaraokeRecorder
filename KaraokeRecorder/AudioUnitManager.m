@@ -57,7 +57,11 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
                                      , AudioBufferList* __nullable ioData) {
     if (!ioData)
         return noErr;
-    NSLog(@"#AudioUnit# Playback: *ioActionFlags=%d", *ioActionFlags);
+    NSLog(@"#AudioUnit# Playback: actionFlags=0x%x, bufNumber=%d", *ioActionFlags, inBusNumber);
+    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender) || inBusNumber != 1)
+    {printf("\n#AudioUnit# Playback: return\n");
+        return noErr;
+    }
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
     if (!auMgr.isPlaying)
     {
@@ -423,9 +427,10 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     AURenderCallbackStruct playbackCallback;
     playbackCallback.inputProc = PlaybackCallbackProc;
     playbackCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-    // Both the following 2 lines work for output:
-    result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &playbackCallback, sizeof(playbackCallback));
+    // Both the following 2 lines work for IO node output:
+    //result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &playbackCallback, sizeof(playbackCallback));
     //result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &playbackCallback);
+    result = AudioUnitAddRenderNotify(_ioUnit, PlaybackCallbackProc, (__bridge void* _Nullable) self);
     NSLog(@"result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     /*
     AURenderCallbackStruct inputCallback;

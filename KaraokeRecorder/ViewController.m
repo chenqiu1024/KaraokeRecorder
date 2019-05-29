@@ -32,7 +32,7 @@
     NSMutableData* destBuffer = _recordAudioDatas[channel];
     [destBuffer appendBytes:data length:length];
 }
-/*
+//*
 -(void) audioUnitManager:(AudioUnitManager*)auMgr willFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
     const float Frequencies[] = {660, 420};
     static NSUInteger totalSampleCounts[] = {0, 0};
