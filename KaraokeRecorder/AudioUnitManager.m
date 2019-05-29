@@ -55,7 +55,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
                                      , UInt32 inBusNumber
                                      , UInt32 inNumberFrames
                                      , AudioBufferList* __nullable ioData) {
-    NSLog(@"#AudioUnit# Playback: actionFlags=0x%x, busNumber=%d, frames=%d", *ioActionFlags, inBusNumber, inNumberFrames);
+//    NSLog(@"#AudioUnit# Playback: actionFlags=0x%x, busNumber=%d, frames=%d", *ioActionFlags, inBusNumber, inNumberFrames);
     if (inBusNumber == 1)
         return noErr;
     
@@ -63,7 +63,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         return noErr;
     
     if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
-    {printf("\n#AudioUnit# Playback: return\n");
+    {//printf("\n#AudioUnit# Playback: return\n");
         return noErr;
     }
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
@@ -84,7 +84,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     {
         AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
         if (!audioBuffer.mData) continue;
-        NSLog(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
+        //NSLog(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
         NSMutableData* playbackData = (auMgr.playbackDatas && iBuffer < auMgr.playbackDatas.count) ? auMgr.playbackDatas[iBuffer] : nil;
         int consumedByteLength = playbackData ? (int)playbackData.length : 0;
         consumedByteLength = consumedByteLength < audioBuffer.mDataByteSize ? consumedByteLength : audioBuffer.mDataByteSize;
@@ -98,12 +98,12 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         }
         memset(audioBuffer.mData + consumedByteLength, 0, audioBuffer.mDataByteSize - consumedByteLength);
         
-        static NSUInteger totalBytesLength = 0;
-        if (iBuffer == 0)
-        {
-            NSLog(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
-            totalBytesLength += audioBuffer.mDataByteSize;
-        }
+//        static NSUInteger totalBytesLength = 0;
+//        if (iBuffer == 0)
+//        {
+//            NSLog(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
+//            totalBytesLength += audioBuffer.mDataByteSize;
+//        }
     }
     
     if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:postFillPlaybackAudioData:length:channel:)])
@@ -111,16 +111,16 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
         {
             AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
-            NSLog(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
+//            NSLog(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
             if (!audioBuffer.mData) continue;
             [auMgr.delegate audioUnitManager:auMgr postFillPlaybackAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:iBuffer];
             
-            static NSUInteger totalBytesLength = 0;
-            if (iBuffer == 0)
-            {
-                NSLog(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
-                totalBytesLength += audioBuffer.mDataByteSize;
-            }
+//            static NSUInteger totalBytesLength = 0;
+//            if (iBuffer == 0)
+//            {
+//                NSLog(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
+//                totalBytesLength += audioBuffer.mDataByteSize;
+//            }
         }
     }
     else
@@ -271,12 +271,12 @@ static OSStatus ResampleCallbackProc(void* inRefCon
         {
             [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
             
-            static NSUInteger totalBytesLength = 0;
-            if (i == 0)
-            {
-                //NSLog(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
-                totalBytesLength += ioData->mBuffers[i].mDataByteSize;
-            }
+            //static NSUInteger totalBytesLength = 0;
+            //if (i == 0)
+            //{
+            //    NSLog(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
+            //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
+            //}
         }
     }
     //*/

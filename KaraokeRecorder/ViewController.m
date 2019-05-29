@@ -15,11 +15,13 @@
 }
 
 @property (nonatomic, strong) AudioUnitManager* auMgr;
-@property (nonatomic, strong) IBOutlet UISwitch* waveGeneratorSwitch;
+//@property (nonatomic, strong) IBOutlet UISwitch* waveGeneratorSwitch;
+
+@property (nonatomic, assign) BOOL useWaveGenerator;
 
 -(IBAction)onRecordButtonPressed:(id)sender;
 -(IBAction)onPlayButtonPressed:(id)sender;
-
+-(IBAction)onWaveGeneratorSwitchChanged:(id)sender;
 
 @end
 
@@ -37,7 +39,7 @@
 //*
 -(void) audioUnitManager:(AudioUnitManager*)auMgr postFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
     NSLog(@"#AudioUnit# Delegate: postFillPlaybackAudioData 0x%lx %d bytes", (long)data, length);
-    if (!_waveGeneratorSwitch.isOn) return;
+    if (!_useWaveGenerator) return;
     const float Frequencies[] = {660, 420};
     static NSUInteger totalSampleCounts[] = {0, 0};
     int samples = length / 2;
@@ -57,6 +59,12 @@
     // Do any additional setup after loading the view.
     _auMgr = [AudioUnitManager sharedInstance];
     _auMgr.delegate = self;
+    
+    _useWaveGenerator = NO;
+}
+
+-(IBAction)onWaveGeneratorSwitchChanged:(id)sender {
+    _useWaveGenerator = ((UISwitch*)sender).isOn;
 }
 
 -(IBAction)onRecordButtonPressed:(id)sender {
