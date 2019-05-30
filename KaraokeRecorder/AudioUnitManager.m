@@ -86,63 +86,82 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
             if (!audioBuffer.mData) continue;
             memset(audioBuffer.mData, 0, audioBuffer.mDataByteSize);
         }
-        
-        return noErr;
     }
-    
-    BOOL playOver = NO;
-    for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
+    else
     {
-        AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
-        if (!audioBuffer.mData) continue;
-        //LOG_V(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
-        NSMutableData* playbackData = (auMgr.playbackDatas && iBuffer < auMgr.playbackDatas.count) ? auMgr.playbackDatas[iBuffer] : nil;
-        int consumedByteLength = playbackData ? (int)playbackData.length : 0;
-        consumedByteLength = consumedByteLength < audioBuffer.mDataByteSize ? consumedByteLength : audioBuffer.mDataByteSize;
-        if (consumedByteLength)
-        {
-            memcpy(audioBuffer.mData, playbackData.bytes, consumedByteLength);
-            [playbackData replaceBytesInRange:NSMakeRange(0, consumedByteLength) withBytes:NULL length:0];
-            
-            if (playbackData.length == 0)
-            {
-                LOG_V(@"#AudioUnit# AudioData[%d] EOF", iBuffer);
-                playOver = YES;
-            }
-        }
-        memset(audioBuffer.mData + consumedByteLength, 0, audioBuffer.mDataByteSize - consumedByteLength);
-        
-//        static NSUInteger totalBytesLength = 0;
-//        if (iBuffer == 0)
-//        {
-//            LOG_V(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
-//            totalBytesLength += audioBuffer.mDataByteSize;
-//        }
-    }
-    
-    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:postFillPlaybackAudioData:length:channel:)])
-    {
+        BOOL playOver = NO;
         for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
         {
             AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
-//            LOG_V(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
             if (!audioBuffer.mData) continue;
-            [auMgr.delegate audioUnitManager:auMgr postFillPlaybackAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:iBuffer];
+            //LOG_V(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
+            NSMutableData* playbackData = (auMgr.playbackDatas && iBuffer < auMgr.playbackDatas.count) ? auMgr.playbackDatas[iBuffer] : nil;
+            int consumedByteLength = playbackData ? (int)playbackData.length : 0;
+            consumedByteLength = consumedByteLength < audioBuffer.mDataByteSize ? consumedByteLength : audioBuffer.mDataByteSize;
+            if (consumedByteLength)
+            {
+                memcpy(audioBuffer.mData, playbackData.bytes, consumedByteLength);
+                [playbackData replaceBytesInRange:NSMakeRange(0, consumedByteLength) withBytes:NULL length:0];
+                
+                if (playbackData.length == 0)
+                {
+                    LOG_V(@"#AudioUnit# AudioData[%d] EOF", iBuffer);
+                    playOver = YES;
+                }
+            }
+            memset(audioBuffer.mData + consumedByteLength, 0, audioBuffer.mDataByteSize - consumedByteLength);
             
-//            static NSUInteger totalBytesLength = 0;
-//            if (iBuffer == 0)
-//            {
-//                LOG_V(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
-//                totalBytesLength += audioBuffer.mDataByteSize;
-//            }
+            //        static NSUInteger totalBytesLength = 0;
+            //        if (iBuffer == 0)
+            //        {
+            //            LOG_V(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
+            //            totalBytesLength += audioBuffer.mDataByteSize;
+            //        }
+        }
+        
+        if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:postFillPlaybackAudioData:length:channel:)])
+        {
+            for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
+            {
+                AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
+                //            LOG_V(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
+                if (!audioBuffer.mData) continue;
+                [auMgr.delegate audioUnitManager:auMgr postFillPlaybackAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:iBuffer];
+                
+                //            static NSUInteger totalBytesLength = 0;
+                //            if (iBuffer == 0)
+                //            {
+                //                LOG_V(@"#AudioUnit# totalBytesLength=%ld", totalBytesLength);
+                //                totalBytesLength += audioBuffer.mDataByteSize;
+                //            }
+            }
+        }
+        
+        if (playOver && auMgr.completionHandler)
+        {
+            auMgr.completionHandler();
         }
     }
-    
-    if (playOver && auMgr.completionHandler)
+    /*
+    if (auMgr.isRecording)
     {
-        auMgr.completionHandler();
+        AudioUnitRenderActionFlags actionFlags = kAudioUnitRenderAction_PostRender;
+        OSStatus result = AudioUnitRender(auMgr.resamplerUnit, &actionFlags, inTimeStamp, 0, inNumberFrames, auMgr.audioBufferList);
+//        OSStatus result = AudioUnitRender(auMgr.resamplerUnit, &actionFlags, inTimeStamp, 0, inNumberFrames, ioData);
+        LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+        if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+        {
+            for (int i=0; i<auMgr.audioBufferList->mNumberBuffers; ++i)
+//            for (int i=0; i<ioData->mNumberBuffers; ++i)
+            {
+                AudioBuffer audioBuffer = auMgr.audioBufferList->mBuffers[i];
+//                AudioBuffer audioBuffer = ioData->mBuffers[i];
+                if (!audioBuffer.mData) continue;
+                [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:i];
+            }
+        }
     }
-    
+    //*/
     return noErr;
 }
 
@@ -228,75 +247,40 @@ static OSStatus ResampleCallbackProc(void* inRefCon
                                   , UInt32 inNumberFrames
                                   , AudioBufferList* __nullable ioData) {
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
-    if (!auMgr.isRecording)
-        return noErr;
-    //printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
-    /*
-     int numBuffers = 1;
-     if (!auMgr.audioBufferList)
-     {
-     auMgr.audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
-     auMgr.audioBufferList->mNumberBuffers = numBuffers;
-     }
-     auMgr.audioBufferList->mNumberBuffers = numBuffers;
-     for (int i=0; i<numBuffers; ++i)
-     {
-     auMgr.audioBufferList->mBuffers[i].mNumberChannels = 1;
-     if (auMgr.audioBufferList->mBuffers[i].mDataByteSize < inNumberFrames * 2)
-     {
-     auMgr.audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * 2;
-     if (auMgr.audioBufferList->mBuffers[i].mData)
-     {
-     free(auMgr.audioBufferList->mBuffers[i].mData);
-     }
-     auMgr.audioBufferList->mBuffers[i].mData = malloc(auMgr.audioBufferList->mBuffers[i].mDataByteSize);
-     memset(auMgr.audioBufferList->mBuffers[i].mData, 0, auMgr.audioBufferList->mBuffers[i].mDataByteSize);
-     }
-     else
-     {
-     auMgr.audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * 2;
-     }
-     }
-     OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
-     if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
-     {
-     for (int i=0; i<numBuffers; ++i)
-     {
-     [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:auMgr.audioBufferList->mBuffers[i].mData length:auMgr.audioBufferList->mBuffers[i].mDataByteSize channel:i];
-     
-     static NSUInteger totalBytesLength = 0;
-     if (i == 0)
-     {
-     LOG_V(@"#AudioUnit# Recording: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
-     totalBytesLength += auMgr.audioBufferList->mBuffers[i].mDataByteSize;
-     }
-     }
-     }
-     /*/
-    if (!ioData)
-        return noErr;
-    if (*ioActionFlags & kAudioUnitRenderAction_PreRender)
-        return noErr;
-    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
-        return noErr;
-    
-    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+    LOG_V(@"\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames, ioData)=(%d, %d, 0x%lx)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames, (long)ioData);
+    if (auMgr.isRecording)
     {
-        for (int i=0; i<ioData->mNumberBuffers; ++i)
+        if (!ioData)
+            return noErr;
+        if (*ioActionFlags & kAudioUnitRenderAction_PreRender)
+            return noErr;
+        if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
+            return noErr;
+        
+        if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
         {
-            if (!ioData->mBuffers[i].mData) continue;
-            [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
-            
-            //static NSUInteger totalBytesLength = 0;
-            //if (i == 0)
-            //{
-            //    LOG_V(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
-            //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
-            //}
+            for (int i=0; i<ioData->mNumberBuffers; ++i)
+            {
+                if (!ioData->mBuffers[i].mData) continue;
+                [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
+                
+                //static NSUInteger totalBytesLength = 0;
+                //if (i == 0)
+                //{
+                //    LOG_V(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
+                //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
+                //}
+            }
         }
+        //*/
+        //LOG_V(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
     }
-    //*/
-    //LOG_V(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
+    
+    if (*ioActionFlags & kAudioUnitRenderAction_PostRender)
+    {
+        PlaybackCallbackProc(inRefCon, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, ioData);
+    }
+    
     return noErr;
 }
 
@@ -380,7 +364,10 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     result = AUGraphAddNode(_auGraph, &resamplerACDesc, &resamplerNode);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // Connect the nodes:
-    AUGraphConnectNodeInput(_auGraph, ioNode, 1, resamplerNode, 0);
+    result = AUGraphConnectNodeInput(_auGraph, ioNode, 1, resamplerNode, 0);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AUGraphConnectNodeInput(_auGraph, resamplerNode, 0, ioNode, 0);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // Open the AUGraph, but it is not initialized(allocate resources) at this point:
     result = AUGraphOpen(_auGraph);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
@@ -421,6 +408,8 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_resamplerUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioInputASBD, sizeof(ioInputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AudioUnitSetProperty(_resamplerUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &ioOutputASBD, sizeof(ioOutputASBD));
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     // Not quite clear about what these settings are for:
     //flag = 0;
@@ -454,6 +443,9 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     //result = AudioUnitSetProperty(_resampler1Unit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &resampler1Callback, sizeof(resampler1Callback));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     //*/
+    result = AudioUnitAddRenderNotify(_resamplerUnit, ResampleCallbackProc, (__bridge void* _Nullable) self);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
     result = AUGraphInitialize(_auGraph);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     CAShow(_auGraph);
