@@ -32,6 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
 +(instancetype) sharedInstance;
 
 -(void) startPlaying;
+-(void) startPlayingWithCompletionHandler:(void(^)(void))completion;
+-(void) startPlaying:(id<AudioUnitManagerDelegate>)delegate;
 -(void) stopPlaying;
 
 -(void) startRecording:(id<AudioUnitManagerDelegate>)delegate;
