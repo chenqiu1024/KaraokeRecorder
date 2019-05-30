@@ -27,7 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, assign, readonly) float micphoneSampleRate;
 @property (nonatomic, assign, readonly) float audioSourceSampleRate;
-@property (nonatomic, assign, readonly) float recorderSampleRate;
+//@property (nonatomic, assign, readonly) float recorderSampleRate;
 
 +(instancetype) sharedInstance;
 
