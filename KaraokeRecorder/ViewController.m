@@ -38,15 +38,15 @@
 }
 //*
 -(void) audioUnitManager:(AudioUnitManager*)auMgr postFillPlaybackAudioData:(void*)data length:(int)length channel:(int)channel {
-    NSLog(@"#AudioUnit# Delegate: postFillPlaybackAudioData 0x%lx %d bytes", (long)data, length);
     if (!_useWaveGenerator) return;
+    NSLog(@"#AudioUnit# Delegate: postFillPlaybackAudioData 0x%lx %d bytes", (long)data, length);
     const float Frequencies[] = {660, 420};
     static NSUInteger totalSampleCounts[] = {0, 0};
     int samples = length / 2;
     int16_t* pDst = data;
     for (int iSample=0; iSample<samples; iSample+=2)
     {
-        for (int iC=0; iC<2; ++iC)
+        for (int iC=0; iC<2; ++iC)///!!!
         {
             float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / auMgr.audioSourceSampleRate;
             *(pDst++) = (int16_t) (sinf(phase) * 16384);

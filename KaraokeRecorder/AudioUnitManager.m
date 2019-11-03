@@ -9,7 +9,7 @@
 #import "AudioUnitManager.h"
 #import <AVFoundation/AVFoundation.h>
 
-//#define ENABLE_VERBOSE_AUDIOUNIT_LOGS
+#define ENABLE_VERBOSE_AUDIOUNIT_LOGS
 
 #ifdef ENABLE_VERBOSE_AUDIOUNIT_LOGS
 #define LOG_V(...) NSLog(__VA_ARGS__)
@@ -68,10 +68,10 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     LOG_V(@"#AudioUnit# Playback: actionFlags=0x%x, busNumber=%d, frames=%d", *ioActionFlags, inBusNumber, inNumberFrames);
     if (inBusNumber == 1)
         return noErr;
-    
+
     if (!ioData)
         return noErr;
-    
+
     if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
     {//printf("\n#AudioUnit# Playback: return\n");
         return noErr;
@@ -86,7 +86,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
             if (!audioBuffer.mData) continue;
             memset(audioBuffer.mData, 0, audioBuffer.mDataByteSize);
         }
-        
+
         return noErr;
     }
     
@@ -125,7 +125,7 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
         {
             AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
-//            LOG_V(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
+            LOG_V(@"#AudioUnit# inBusNumber=%d, inNumberFrames=%d, audioBuffer[%d].size=%d, .channels=%d", inBusNumber, inNumberFrames, iBuffer, audioBuffer.mDataByteSize, audioBuffer.mNumberChannels);
             if (!audioBuffer.mData) continue;
             [auMgr.delegate audioUnitManager:auMgr postFillPlaybackAudioData:audioBuffer.mData length:audioBuffer.mDataByteSize channel:iBuffer];
             
@@ -338,7 +338,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
 
 -(void) open {
     /// Sample rate 8000Hz is NG for Bluetooth headphone, WHY?
-    _micphoneSampleRate = 16000.f;
+    _micphoneSampleRate = 8000.f;
     _recorderSampleRate = 8000.f;
     _audioSourceSampleRate = 8000.f;
     
@@ -357,8 +357,8 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     AudioComponentDescription ioACDesc, resamplerACDesc;
     ioACDesc.componentType = kAudioUnitType_Output;
     // kAudioUnitSubType_VoiceProcessingIO enables echo cancellation, but mixes the stero channels as mono sound
-    ioACDesc.componentSubType = kAudioUnitSubType_VoiceProcessingIO;
-//    ioACDesc.componentSubType = kAudioUnitSubType_RemoteIO;
+//    ioACDesc.componentSubType = kAudioUnitSubType_VoiceProcessingIO;
+    ioACDesc.componentSubType = kAudioUnitSubType_RemoteIO;
     ioACDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
     ioACDesc.componentFlags = 0;
     ioACDesc.componentFlagsMask = 0;
@@ -417,7 +417,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     
     AudioStreamBasicDescription ioOutputASBD = ioInputASBD;
     ioOutputASBD.mSampleRate = _audioSourceSampleRate;
-    ioOutputASBD.mChannelsPerFrame = 2;
+    ioOutputASBD.mChannelsPerFrame = 2;///
     ioOutputASBD.mBytesPerFrame = ioOutputASBD.mBitsPerChannel * ioOutputASBD.mChannelsPerFrame / 8;
     ioOutputASBD.mBytesPerPacket = ioOutputASBD.mBytesPerFrame * ioOutputASBD.mFramesPerPacket;
     
@@ -492,14 +492,14 @@ static OSStatus ResampleCallbackProc(void* inRefCon
         }
     }];
     
-    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowBluetoothA2DP error:nil];
+    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker|AVAudioSessionCategoryOptionAllowBluetooth|AVAudioSessionCategoryOptionAllowBluetoothA2DP error:nil];///!!!
     [audioSession setPreferredSampleRate:_micphoneSampleRate error:nil];
     [audioSession setPreferredIOBufferDuration:0.064 error:nil];
     /* Only valid with AVAudioSessionCategoryPlayAndRecord.  Appropriate for Voice over IP
      (VoIP) applications.  Reduces the number of allowable audio routes to be only those
      that are appropriate for VoIP applications and may engage appropriate system-supplied
      signal processing.  Has the side effect of setting AVAudioSessionCategoryOptionAllowBluetooth */
-    [audioSession setMode:AVAudioSessionModeVoiceChat error:nil];
+    [audioSession setMode:AVAudioSessionModeVideoRecording error:nil];///!!!
     [audioSession setActive:YES error:nil];
 }
 
