@@ -73,10 +73,10 @@ static OSStatus MediaSourceCallbackProc(void* inRefCon
     if (!ioData)
         return noErr;
 
-    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
-    {//printf("\n#AudioUnit# Playback: return\n");
-        return noErr;
-    }
+//    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
+//    {//printf("\n#AudioUnit# Playback: return\n");
+//        return noErr;
+//    }
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
     if (!auMgr.isPlaying)
     {
@@ -491,7 +491,9 @@ static OSStatus RecordingCallbackProc(void* inRefCon
     // Both the following 2 lines work for IO node output:
     //result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &mediaSourceCallback, sizeof(mediaSourceCallback));
     //result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &mediaSourceCallback);
-    result = AudioUnitAddRenderNotify(_resampler4MediaUnit, MediaSourceCallbackProc, (__bridge void* _Nullable) self);///!!!
+//    result = AudioUnitAddRenderNotify(_resampler4MediaUnit, MediaSourceCallbackProc, (__bridge void* _Nullable) self);///!!!
+//    result = AudioUnitSetProperty(_resampler4MediaUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &mediaSourceCallback, sizeof(mediaSourceCallback));///!!!
+    result = AUGraphSetNodeInputCallback(_auGraph, resampler4MediaNode, 0, &mediaSourceCallback);///!!!
 //    result = AudioUnitAddRenderNotify(_resampler4MicUnit, MediaSourceCallbackProc, (__bridge void* _Nullable) self);///!!!
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     /*
