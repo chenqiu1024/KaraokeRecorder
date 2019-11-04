@@ -107,28 +107,28 @@
             if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
             {
                 NSData* data = [NSData dataWithContentsOfFile:srcPath];
-                data = [AudioUnitManager makeInterleavedSteroAudioDataFromMonoData:data.bytes length:data.length];
+//                data = [AudioUnitManager makeInterleavedSteroAudioDataFromMonoData:data.bytes length:data.length];
                 [self.auMgr addAudioData:(void*)data.bytes length:(int)data.length channel:0];
             }
-            else
-            {
-                const float Frequencies[] = {660, 420};
-                static NSUInteger totalSampleCounts[] = {0, 0};
-                int samples = 65536;
-                void* data = malloc(samples * 2);
-                int16_t* pDst = data;
-                for (int iSample=0; iSample<samples; iSample+=2)
-                {
-                    for (int iC=0; iC<2; ++iC)
-                    {
-                        float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / self.auMgr.audioSourceSampleRate;
-                        *(pDst++) = (int16_t) (sinf(phase) * 16384);
-                    }
-                }
-                
-                [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:0];
-                free(data);
-            }
+//            else
+//            {
+//                const float Frequencies[] = {660, 420};
+//                static NSUInteger totalSampleCounts[] = {0, 0};
+//                int samples = 65536;
+//                void* data = malloc(samples * 2);
+//                int16_t* pDst = data;
+//                for (int iSample=0; iSample<samples; iSample+=2)
+//                {
+//                    for (int iC=0; iC<2; ++iC)
+//                    {
+//                        float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / self.auMgr.audioSourceSampleRate;
+//                        *(pDst++) = (int16_t) (sinf(phase) * 16384);
+//                    }
+//                }
+//                
+//                [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:0];
+//                free(data);
+//            }
         });
         
         button.tag = 1;
