@@ -50,8 +50,10 @@ NSString* AudioUnitRenderActionFlagsString(AudioUnitRenderActionFlags flags) {
 @property (nonatomic, assign) float audioSourceSampleRate;
 @property (nonatomic, assign) float recorderSampleRate;
 
-@property (nonatomic, assign) AUGraph auGraph;
-@property (nonatomic, assign) AudioUnit ioUnit;
+@property (nonatomic, assign) AUGraph auGraph0;
+@property (nonatomic, assign) AUGraph auGraph1;
+@property (nonatomic, assign) AudioUnit ioUnit0;
+@property (nonatomic, assign) AudioUnit ioUnit1;
 @property (nonatomic, assign) AudioUnit resampler0Unit;
 @property (nonatomic, assign) AudioUnit resampler1Unit;
 @property (nonatomic, assign) AudioBufferList* audioBufferList;
@@ -318,12 +320,16 @@ static OSStatus ResampleCallbackProc(void* inRefCon
 }
 
 -(void) close {
-    if (!_auGraph)
+    if (!_auGraph0)
         return;
     
-    AUGraphStop(_auGraph);
-    AUGraphClose(_auGraph);
-    _auGraph = NULL;
+    AUGraphStop(_auGraph0);
+    AUGraphClose(_auGraph0);
+    _auGraph0 = NULL;
+    
+    AUGraphStop(_auGraph1);
+    AUGraphClose(_auGraph1);
+    _auGraph1 = NULL;
     
     for (int i=0; i<_audioBufferList->mNumberBuffers; ++i)
     {
@@ -371,8 +377,10 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     
     // Create the AUGraph:
     OSStatus result;
-    AUNode ioNode, resampler0Node, resampler1Node;
-    result = NewAUGraph(&_auGraph);
+    AUNode ioNode0, ioNode1, resampler0Node, resampler1Node;
+    result = NewAUGraph(&_auGraph0);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = NewAUGraph(&_auGraph1);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // Add AUNode(s):
     result = AUGraphAddNode(_auGraph, &ioACDesc, &ioNode);
