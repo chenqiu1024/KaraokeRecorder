@@ -48,18 +48,19 @@ NSString* AudioUnitRenderActionFlagsString(AudioUnitRenderActionFlags flags) {
 
 @property (nonatomic, assign) float micphoneSampleRate;
 @property (nonatomic, assign) float audioSourceSampleRate;
-@property (nonatomic, assign) float recorderSampleRate;
+@property (nonatomic, assign) float playbackSampleRate;
 
 @property (nonatomic, assign) AUGraph auGraph;
 @property (nonatomic, assign) AudioUnit ioUnit;
-@property (nonatomic, assign) AudioUnit resampler0Unit;
-@property (nonatomic, assign) AudioUnit resampler1Unit;
+@property (nonatomic, assign) AudioUnit resampler4MicUnit;
+@property (nonatomic, assign) AudioUnit resampler4MediaUnit;
+@property (nonatomic, assign) AudioUnit mixerUnit;
 @property (nonatomic, assign) AudioBufferList* audioBufferList;
 @property (nonatomic, strong) NSMutableArray<NSMutableData* >* playbackDatas;
 
 @end
 
-static OSStatus PlaybackCallbackProc(void* inRefCon
+static OSStatus MediaSourceCallbackProc(void* inRefCon
                                      , AudioUnitRenderActionFlags* ioActionFlags
                                      , const AudioTimeStamp* inTimeStamp
                                      , UInt32 inBusNumber
@@ -221,7 +222,7 @@ static OSStatus InputCallbackProc(void* inRefCon
     return noErr;
 }
 
-static OSStatus ResampleCallbackProc(void* inRefCon
+static OSStatus RecordingCallbackProc(void* inRefCon
                                   , AudioUnitRenderActionFlags* ioActionFlags
                                   , const AudioTimeStamp* inTimeStamp
                                   , UInt32 inBusNumber
@@ -338,8 +339,9 @@ static OSStatus ResampleCallbackProc(void* inRefCon
 
 -(void) open {
     /// Sample rate 8000Hz is NG for Bluetooth headphone, WHY?
+    /// Presume that the audio recording samplerate is the same as playback samplerate
     _micphoneSampleRate = 8000.f;
-    _recorderSampleRate = 8000.f;
+    _playbackSampleRate = 8000.f;
     _audioSourceSampleRate = 8000.f;
     
     int numBuffers = 1;
@@ -354,7 +356,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     }
     
     // Set all AudioComponentDescription(s):
-    AudioComponentDescription ioACDesc, resamplerACDesc;
+    AudioComponentDescription ioACDesc, resamplerACDesc, mixerACDesc;
     ioACDesc.componentType = kAudioUnitType_Output;
     // kAudioUnitSubType_VoiceProcessingIO enables echo cancellation, but mixes the stero channels as mono sound
 //    ioACDesc.componentSubType = kAudioUnitSubType_VoiceProcessingIO;
@@ -369,31 +371,42 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     resamplerACDesc.componentFlagsMask = 0;
     resamplerACDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
     
+    mixerACDesc.componentType = kAudioUnitType_Mixer;
+    mixerACDesc.componentSubType = kAudioUnitSubType_MultiChannelMixer;
+    mixerACDesc.componentFlags = 0;
+    mixerACDesc.componentFlagsMask = 0;
+    mixerACDesc.componentManufacturer = kAudioUnitManufacturer_Apple;
+    
     // Create the AUGraph:
     OSStatus result;
-    AUNode ioNode, resampler0Node, resampler1Node;
+    AUNode ioNode, resampler4MicNode, resampler4MediaNode, mixerNode;
     result = NewAUGraph(&_auGraph);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // Add AUNode(s):
     result = AUGraphAddNode(_auGraph, &ioACDesc, &ioNode);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AUGraphAddNode(_auGraph, &resamplerACDesc, &resampler0Node);
+    result = AUGraphAddNode(_auGraph, &resamplerACDesc, &resampler4MicNode);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AUGraphAddNode(_auGraph, &resamplerACDesc, &resampler1Node);
+    result = AUGraphAddNode(_auGraph, &resamplerACDesc, &resampler4MediaNode);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AUGraphAddNode(_auGraph, &mixerACDesc, &mixerNode);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // Connect the nodes:
-    AUGraphConnectNodeInput(_auGraph, ioNode, 1, resampler0Node, 0);
-    AUGraphConnectNodeInput(_auGraph, resampler0Node, 0, resampler1Node, 0);
-    AUGraphConnectNodeInput(_auGraph, resampler1Node, 0, ioNode, 0);
+    AUGraphConnectNodeInput(_auGraph, ioNode, 1, resampler4MicNode, 0);
+    AUGraphConnectNodeInput(_auGraph, resampler4MicNode, 0, mixerNode, 0);
+    AUGraphConnectNodeInput(_auGraph, resampler4MediaNode, 0, mixerNode, 1);
+    AUGraphConnectNodeInput(_auGraph, mixerNode, 0, ioNode, 0);
     // Open the AUGraph, but it is not initialized(allocate resources) at this point:
     result = AUGraphOpen(_auGraph);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // Get the AudioUnit info:
     result = AUGraphNodeInfo(_auGraph, ioNode, &ioACDesc, &_ioUnit);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AUGraphNodeInfo(_auGraph, resampler0Node, &resamplerACDesc, &_resampler0Unit);
+    result = AUGraphNodeInfo(_auGraph, resampler4MicNode, &resamplerACDesc, &_resampler4MicUnit);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AUGraphNodeInfo(_auGraph, resampler1Node, &resamplerACDesc, &_resampler1Unit);
+    result = AUGraphNodeInfo(_auGraph, resampler4MediaNode, &resamplerACDesc, &_resampler4MediaUnit);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AUGraphNodeInfo(_auGraph, mixerNode, &mixerACDesc, &_mixerUnit);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     UInt32 flag = 1;
@@ -416,26 +429,42 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     ioInputASBD.mBytesPerPacket = ioInputASBD.mBytesPerFrame * ioInputASBD.mFramesPerPacket;
     
     AudioStreamBasicDescription ioOutputASBD = ioInputASBD;
-    ioOutputASBD.mSampleRate = _audioSourceSampleRate;
+    ioOutputASBD.mSampleRate = _playbackSampleRate;
     ioOutputASBD.mChannelsPerFrame = 2;///
     ioOutputASBD.mBytesPerFrame = ioOutputASBD.mBitsPerChannel * ioOutputASBD.mChannelsPerFrame / 8;
     ioOutputASBD.mBytesPerPacket = ioOutputASBD.mBytesPerFrame * ioOutputASBD.mFramesPerPacket;
     
-    AudioStreamBasicDescription resampler0OutputASBD = ioInputASBD;
-    resampler0OutputASBD.mSampleRate = _recorderSampleRate;
+    AudioStreamBasicDescription resampler4MicOutputASBD = ioInputASBD;
+    resampler4MicOutputASBD.mSampleRate = _playbackSampleRate;
+    
+    AudioStreamBasicDescription resampler4MediaInputASBD;
+    resampler4MediaInputASBD.mSampleRate = _audioSourceSampleRate;
+    resampler4MediaInputASBD.mFormatID = kAudioFormatLinearPCM;
+    resampler4MediaInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+    resampler4MediaInputASBD.mFramesPerPacket = 1;
+    resampler4MediaInputASBD.mChannelsPerFrame = 2;
+    resampler4MediaInputASBD.mBitsPerChannel = 16;
+    
+    resampler4MediaInputASBD.mBytesPerFrame = resampler4MediaInputASBD.mBitsPerChannel * resampler4MediaInputASBD.mChannelsPerFrame / 8;
+    resampler4MediaInputASBD.mBytesPerPacket = resampler4MediaInputASBD.mBytesPerFrame * resampler4MediaInputASBD.mFramesPerPacket;
+    
+    AudioStreamBasicDescription resampler4MediaOutputASBD = resampler4MediaInputASBD;
+    resampler4MediaOutputASBD.mSampleRate = _playbackSampleRate;
     
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &ioInputASBD, sizeof(ioInputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     // kAudioUnitScope_Input of element 0 of IO unit represents the input of Speaker:
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioOutputASBD, sizeof(ioOutputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AudioUnitSetProperty(_resampler0Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioInputASBD, sizeof(ioInputASBD));
+    result = AudioUnitSetProperty(_resampler4MicUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &ioInputASBD, sizeof(ioInputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AudioUnitSetProperty(_resampler0Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &resampler0OutputASBD, sizeof(resampler0OutputASBD));
+    result = AudioUnitSetProperty(_resampler4MicUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &resampler4MicOutputASBD, sizeof(resampler4MicOutputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AudioUnitSetProperty(_resampler1Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &resampler0OutputASBD, sizeof(resampler0OutputASBD));
+    result = AudioUnitSetProperty(_resampler4MediaUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &resampler4MediaInputASBD, sizeof(resampler4MediaInputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    result = AudioUnitSetProperty(_resampler1Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &ioOutputASBD, sizeof(ioOutputASBD));
+    result = AudioUnitSetProperty(_resampler4MediaUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &resampler4MediaOutputASBD, sizeof(resampler4MediaOutputASBD));
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AudioUnitSetProperty(_mixerUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &ioOutputASBD, sizeof(ioOutputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     // Not quite clear about what these settings are for:
@@ -446,13 +475,13 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     UInt32 maximumFramesPerSlice = 2048;
     result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 1, &maximumFramesPerSlice, sizeof(maximumFramesPerSlice));
     
-    AURenderCallbackStruct playbackCallback;
-    playbackCallback.inputProc = PlaybackCallbackProc;
-    playbackCallback.inputProcRefCon = (__bridge void* _Nullable) self;
+    AURenderCallbackStruct mediaSourceCallback;
+    mediaSourceCallback.inputProc = MediaSourceCallbackProc;
+    mediaSourceCallback.inputProcRefCon = (__bridge void* _Nullable) self;
     // Both the following 2 lines work for IO node output:
-    //result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &playbackCallback, sizeof(playbackCallback));
-    //result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &playbackCallback);
-    result = AudioUnitAddRenderNotify(_resampler1Unit, PlaybackCallbackProc, (__bridge void* _Nullable) self);
+    //result = AudioUnitSetProperty(_ioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, 0, &mediaSourceCallback, sizeof(mediaSourceCallback));
+    //result = AUGraphSetNodeInputCallback(_auGraph, ioNode, 0, &mediaSourceCallback);
+    result = AudioUnitAddRenderNotify(_resampler4MediaUnit, MediaSourceCallbackProc, (__bridge void* _Nullable) self);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     /*
     AURenderCallbackStruct inputCallback;
@@ -462,11 +491,11 @@ static OSStatus ResampleCallbackProc(void* inRefCon
     result = AudioUnitAddRenderNotify(_ioUnit, InputCallbackProc, (__bridge void* _Nullable) self);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     //*/
-    AURenderCallbackStruct resampler1Callback;
-    resampler1Callback.inputProc = ResampleCallbackProc;
-    resampler1Callback.inputProcRefCon = (__bridge void* _Nullable) self;
-    result = AudioUnitAddRenderNotify(_resampler0Unit, ResampleCallbackProc, (__bridge void* _Nullable) self);
-    //result = AudioUnitSetProperty(_resampler1Unit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &resampler1Callback, sizeof(resampler1Callback));
+    AURenderCallbackStruct recordingCallback;
+    recordingCallback.inputProc = RecordingCallbackProc;
+    recordingCallback.inputProcRefCon = (__bridge void* _Nullable) self;
+    result = AudioUnitAddRenderNotify(_mixerUnit, RecordingCallbackProc, (__bridge void* _Nullable) self);
+    //result = AudioUnitSetProperty(_resampler1Unit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &recordingCallback, sizeof(recordingCallback));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     result = AUGraphInitialize(_auGraph);
@@ -500,6 +529,7 @@ static OSStatus ResampleCallbackProc(void* inRefCon
      that are appropriate for VoIP applications and may engage appropriate system-supplied
      signal processing.  Has the side effect of setting AVAudioSessionCategoryOptionAllowBluetooth */
     [audioSession setMode:AVAudioSessionModeVideoRecording error:nil];///!!!
+//    [audioSession setMode:AVAudioSessionModeVoiceChat error:nil];///!!!
     [audioSession setActive:YES error:nil];
 }
 
