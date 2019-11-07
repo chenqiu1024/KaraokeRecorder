@@ -114,7 +114,7 @@
 //            {
 //                const float Frequencies[] = {660, 420};
 //                static NSUInteger totalSampleCounts[] = {0, 0};
-//                int samples = 65536;
+//                 int samples = 65536;
 //                void* data = malloc(samples * 2);
 //                int16_t* pDst = data;
 //                for (int iSample=0; iSample<samples; iSample+=2)
@@ -125,7 +125,7 @@
 //                        *(pDst++) = (int16_t) (sinf(phase) * 16384);
 //                    }
 //                }
-//                
+//
 //                [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:0];
 //                free(data);
 //            }
