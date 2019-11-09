@@ -69,7 +69,13 @@
         }
         memcpy(_buffer + _writeLocation, buffer + offset, length - offset);
         _writeLocation += (length - offset);
-        _bytesFilled += length;
+        
+        [_cond lock];
+        {
+            _bytesFilled += length;
+            [_cond broadcast];
+        }
+        [_cond unlock];
         
         return length;
     }
@@ -99,6 +105,8 @@
                 _bytesFilled += bytesToWrite;
                 _writeLocation += bytesToWrite;
                 offset += bytesToWrite;
+                
+                [_cond broadcast];
             }
             [_cond unlock];
         }
@@ -112,15 +120,20 @@
         {
             NSUInteger segmentLength = _capacity - _writeLocation;
             memcpy(_buffer + _writeLocation, buffer + offset, segmentLength);
-            _bytesFilled += segmentLength;
             _writeLocation = 0;
             offset += segmentLength;
             bytesToWrite -= segmentLength;
         }
         memcpy(_buffer + _writeLocation, buffer + offset, bytesToWrite);
-        _bytesFilled += bytesToWrite;
         _writeLocation += bytesToWrite;
         offset += bytesToWrite;
+        
+        [_cond lock];
+        {
+            _bytesFilled += offset;
+            [_cond broadcast];
+        }
+        [_cond unlock];
         
         return offset;
     }
