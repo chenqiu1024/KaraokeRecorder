@@ -15,6 +15,7 @@
 		525FA4A7229B7AE4001A161E /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 525FA4A6229B7AE4001A161E /* main.m */; };
 		525FA4B1229B7B98001A161E /* AudioUnitManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 525FA4B0229B7B98001A161E /* AudioUnitManager.m */; };
 		525FA4B4229B7F5A001A161E /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 525FA4B3229B7F5A001A161E /* AVFoundation.framework */; };
+		BB1E4C542376A81C00359B5C /* MultiConsumerFIFO.m in Sources */ = {isa = PBXBuildFile; fileRef = BB1E4C532376A81C00359B5C /* MultiConsumerFIFO.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,8 @@
 		525FA4AF229B7B98001A161E /* AudioUnitManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AudioUnitManager.h; sourceTree = "<group>"; };
 		525FA4B0229B7B98001A161E /* AudioUnitManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AudioUnitManager.m; sourceTree = "<group>"; };
 		525FA4B3229B7F5A001A161E /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		BB1E4C522376A81C00359B5C /* MultiConsumerFIFO.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MultiConsumerFIFO.h; sourceTree = "<group>"; };
+		BB1E4C532376A81C00359B5C /* MultiConsumerFIFO.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MultiConsumerFIFO.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +79,8 @@
 				525FA4A6229B7AE4001A161E /* main.m */,
 				525FA4AF229B7B98001A161E /* AudioUnitManager.h */,
 				525FA4B0229B7B98001A161E /* AudioUnitManager.m */,
+				BB1E4C522376A81C00359B5C /* MultiConsumerFIFO.h */,
+				BB1E4C532376A81C00359B5C /* MultiConsumerFIFO.m */,
 			);
 			path = KaraokeRecorder;
 			sourceTree = "<group>";
@@ -160,6 +165,7 @@
 			files = (
 				525FA49C229B7AE1001A161E /* ViewController.m in Sources */,
 				525FA4A7229B7AE4001A161E /* main.m in Sources */,
+				BB1E4C542376A81C00359B5C /* MultiConsumerFIFO.m in Sources */,
 				525FA4B1229B7B98001A161E /* AudioUnitManager.m in Sources */,
 				525FA499229B7AE1001A161E /* AppDelegate.m in Sources */,
 			);
