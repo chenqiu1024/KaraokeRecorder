@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 -(NSUInteger) pullData:(void*)buffer length:(NSUInteger)length consumer:(int)consumer waitForComplete:(BOOL)waitForComplete;
 
--(NSUInteger) appendData:(const void*)buffer length:(NSUInteger)length overwriteIfFull:(BOOL)overwriteIfFull;
+-(NSUInteger) appendData:(const void*)buffer length:(NSUInteger)length overwriteIfFull:(BOOL)overwriteIfFull waitForSpace:(BOOL)waitForSpace;
 
 @end
 

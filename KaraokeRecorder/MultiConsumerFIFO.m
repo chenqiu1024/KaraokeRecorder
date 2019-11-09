@@ -21,7 +21,6 @@
 @property (nonatomic, assign) NSUInteger writeLocation;
 @property (nonatomic, assign) NSUInteger* readLocations;
 
-@property (nonatomic, assign) NSUInteger bytesPulled;//For the master consumer
 @property (nonatomic, assign) NSUInteger bytesFilled;//For the master consumer
 
 @end
@@ -47,7 +46,6 @@
         
         _writeLocation = 0;
         
-        _bytesPulled = 0;
         _bytesFilled = 0;
         
         _cond = [[NSCondition alloc] init];
@@ -59,25 +57,73 @@
     return 0;//TODO:
 }
 
--(NSUInteger) appendData:(const void*)buffer length:(NSUInteger)length overwriteIfFull:(BOOL)overwriteIfFull {
+-(NSUInteger) appendData:(const void*)buffer length:(NSUInteger)length overwriteIfFull:(BOOL)overwriteIfFull waitForSpace:(BOOL)waitForSpace {
+    NSUInteger offset = 0;
     if (overwriteIfFull)
     {
-        NSUInteger offset = 0;
         while (_writeLocation + length - offset >= _capacity)
         {
-            memcpy(_buffer, buffer + offset, _capacity - _writeLocation);
+            memcpy(_buffer + _writeLocation, buffer + offset, _capacity - _writeLocation);
             offset += (_capacity - _writeLocation);
             _writeLocation = 0;
         }
-        memcpy(_buffer, buffer + offset, length - offset);
+        memcpy(_buffer + _writeLocation, buffer + offset, length - offset);
         _writeLocation += (length - offset);
+        _bytesFilled += length;
+        
+        return length;
+    }
+    else if (waitForSpace)
+    {
+        while (offset < length)
+        {
+            NSUInteger bytesToWrite = _capacity - _bytesFilled;
+            [_cond lock];
+            {
+                while (bytesToWrite <= 0)
+                {
+                    [_cond wait];
+                    bytesToWrite = _capacity - _bytesFilled;
+                }
+                bytesToWrite = bytesToWrite < length ? bytesToWrite : length;
+                while (_writeLocation + bytesToWrite >= _capacity)
+                {
+                    NSUInteger segmentLength = _capacity - _writeLocation;
+                    memcpy(_buffer + _writeLocation, buffer + offset, segmentLength);
+                    _bytesFilled += segmentLength;
+                    _writeLocation = 0;
+                    offset += segmentLength;
+                    bytesToWrite -= segmentLength;
+                }
+                memcpy(_buffer + _writeLocation, buffer + offset, bytesToWrite);
+                _bytesFilled += bytesToWrite;
+                _writeLocation += bytesToWrite;
+                offset += bytesToWrite;
+            }
+            [_cond unlock];
+        }
+        return length;
     }
     else
     {
-        //TODO:
+        NSUInteger bytesToWrite = _capacity - _bytesFilled;
+        bytesToWrite = bytesToWrite < length ? bytesToWrite : length;
+        while (_writeLocation + bytesToWrite >= _capacity)
+        {
+            NSUInteger segmentLength = _capacity - _writeLocation;
+            memcpy(_buffer + _writeLocation, buffer + offset, segmentLength);
+            _bytesFilled += segmentLength;
+            _writeLocation = 0;
+            offset += segmentLength;
+            bytesToWrite -= segmentLength;
+        }
+        memcpy(_buffer + _writeLocation, buffer + offset, bytesToWrite);
+        _bytesFilled += bytesToWrite;
+        _writeLocation += bytesToWrite;
+        offset += bytesToWrite;
+        
+        return offset;
     }
-    
-    return length;
 }
 
 @end
