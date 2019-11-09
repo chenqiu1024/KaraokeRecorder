@@ -56,7 +56,64 @@
 }
 
 -(NSUInteger) pullData:(void*)buffer length:(NSUInteger)length consumer:(int)consumer waitForComplete:(BOOL)waitForComplete {
-    return 0;//TODO:
+    NSUInteger offset = 0;
+    if (0 == consumer)
+    {
+        return 0;//TODO:
+    }
+    else
+    {
+        NSUInteger bytesToRead = length - offset;
+        while (_filledBytesCounts[consumer] > 0)
+        {
+            bytesToRead = bytesToRead < _filledBytesCounts[consumer] ? bytesToRead : _filledBytesCounts[consumer];
+            NSUInteger bytesRead = bytesToRead;
+            while (_readLocations[consumer] + bytesToRead >= _capacity)
+            {
+                NSUInteger segmentLength = _capacity - _readLocations[consumer];
+                memcpy(buffer + offset, _buffer + _readLocations[consumer], segmentLength);
+                _readLocations[consumer] = 0;
+                offset += segmentLength;
+                bytesToRead -= segmentLength;
+            }
+            memcpy(buffer + offset, _buffer + _readLocations[consumer], bytesToRead);
+            _readLocations[consumer] += bytesToRead;
+            offset += bytesToRead;
+            
+            [_cond lock];
+            {
+                _filledBytesCounts[consumer] -= bytesRead;
+                [_cond broadcast];
+            }
+            [_cond unlock];
+        }
+        
+        bytesToRead = length - offset;
+        if (bytesToRead > 0)
+        {
+            NSUInteger bytesRead = bytesToRead;
+            while (_readLocations[consumer] + bytesToRead >= _capacity)
+            {
+                NSUInteger segmentLength = _capacity - _readLocations[consumer];
+                memset(buffer + offset, 0, segmentLength);
+                _readLocations[consumer] = 0;
+                offset += segmentLength;
+                bytesToRead -= segmentLength;
+            }
+            memset(buffer + offset, 0, bytesToRead);
+            _readLocations[consumer] += bytesToRead;
+            offset += bytesToRead;
+            
+            [_cond lock];
+            {
+                _filledBytesCounts[consumer] -= bytesRead;
+                [_cond broadcast];
+            }
+            [_cond unlock];
+        }
+        
+        return length;
+    }
 }
 
 -(NSUInteger) appendData:(const void*)buffer length:(NSUInteger)length overwriteIfFull:(BOOL)overwriteIfFull waitForSpace:(BOOL)waitForSpace {
