@@ -16,12 +16,12 @@
 
 @property (nonatomic, assign) void* buffer;
 @property (nonatomic, assign) NSUInteger capacity;
-@property (nonatomic, assign) NSUInteger slaveConsumersCount;
+@property (nonatomic, assign) int slaveConsumersCount;
 
 @property (nonatomic, assign) NSUInteger writeLocation;
 @property (nonatomic, assign) NSUInteger* readLocations;
 
-@property (nonatomic, assign) NSUInteger bytesFilled;//For the master consumer
+@property (nonatomic, assign) NSUInteger* filledBytesCounts;
 
 @end
 
@@ -30,6 +30,7 @@
 -(void) dealloc {
     free(_buffer);
     free(_readLocations);
+    free(_filledBytesCounts);
 }
 
 -(instancetype) initWithCapacity:(NSUInteger)capacity slaveConsumers:(int)slaveConsumers delegate:(id<MultiConsumerFIFODelegate>)delegate {
@@ -46,7 +47,8 @@
         
         _writeLocation = 0;
         
-        _bytesFilled = 0;
+        _filledBytesCounts = malloc(sizeof(NSUInteger) * (slaveConsumers + 1));
+        memset(_filledBytesCounts, 0, sizeof(NSUInteger) * (slaveConsumers + 1));
         
         _cond = [[NSCondition alloc] init];
     }
@@ -72,7 +74,10 @@
         
         [_cond lock];
         {
-            _bytesFilled += length;
+            for (int i = _slaveConsumersCount; i >= 0; --i)
+            {
+                _filledBytesCounts[i] += length;
+            }
             [_cond broadcast];
         }
         [_cond unlock];
@@ -83,29 +88,37 @@
     {
         while (offset < length)
         {
-            NSUInteger bytesToWrite = _capacity - _bytesFilled;
+            NSUInteger bytesToWrite = _capacity - _filledBytesCounts[0];
             [_cond lock];
             {
                 while (bytesToWrite <= 0)
                 {
                     [_cond wait];
-                    bytesToWrite = _capacity - _bytesFilled;
+                    bytesToWrite = _capacity - _filledBytesCounts[0];
                 }
-                bytesToWrite = bytesToWrite < length ? bytesToWrite : length;
-                while (_writeLocation + bytesToWrite >= _capacity)
-                {
-                    NSUInteger segmentLength = _capacity - _writeLocation;
-                    memcpy(_buffer + _writeLocation, buffer + offset, segmentLength);
-                    _bytesFilled += segmentLength;
-                    _writeLocation = 0;
-                    offset += segmentLength;
-                    bytesToWrite -= segmentLength;
-                }
-                memcpy(_buffer + _writeLocation, buffer + offset, bytesToWrite);
-                _bytesFilled += bytesToWrite;
-                _writeLocation += bytesToWrite;
-                offset += bytesToWrite;
+            }
+            [_cond unlock];
                 
+            bytesToWrite = bytesToWrite < length ? bytesToWrite : length;
+            NSUInteger bytesFilled = bytesToWrite;
+            while (_writeLocation + bytesToWrite >= _capacity)
+            {
+                NSUInteger segmentLength = _capacity - _writeLocation;
+                memcpy(_buffer + _writeLocation, buffer + offset, segmentLength);
+                _writeLocation = 0;
+                offset += segmentLength;
+                bytesToWrite -= segmentLength;
+            }
+            memcpy(_buffer + _writeLocation, buffer + offset, bytesToWrite);
+            _writeLocation += bytesToWrite;
+            offset += bytesToWrite;
+            
+            [_cond lock];
+            {
+                for (int i = _slaveConsumersCount; i >= 0; --i)
+                {
+                    _filledBytesCounts[i] += bytesFilled;
+                }
                 [_cond broadcast];
             }
             [_cond unlock];
@@ -114,7 +127,7 @@
     }
     else
     {
-        NSUInteger bytesToWrite = _capacity - _bytesFilled;
+        NSUInteger bytesToWrite = _capacity - _filledBytesCounts[0];
         bytesToWrite = bytesToWrite < length ? bytesToWrite : length;
         while (_writeLocation + bytesToWrite >= _capacity)
         {
@@ -130,7 +143,10 @@
         
         [_cond lock];
         {
-            _bytesFilled += offset;
+            for (int i = _slaveConsumersCount; i >= 0; --i)
+            {
+                _filledBytesCounts[i] += offset;
+            }
             [_cond broadcast];
         }
         [_cond unlock];
