@@ -59,7 +59,56 @@
     NSUInteger offset = 0;
     if (0 == consumer)
     {
-        return 0;//TODO:
+        if (waitForComplete)
+        {
+            return 0;//TODO:
+        }
+        else
+        {
+            while (offset < length)
+            {
+                NSUInteger bytesToRead = length - offset;
+                if (_filledBytesCounts[consumer] > 0)
+                {
+                    bytesToRead = bytesToRead < _filledBytesCounts[consumer] ? bytesToRead : _filledBytesCounts[consumer];
+                    NSUInteger bytesRead = bytesToRead;
+                    while (_readLocations[consumer] + bytesToRead >= _capacity)
+                    {
+                        NSUInteger segmentLength = _capacity - _readLocations[consumer];
+                        memcpy(buffer + offset, _buffer + _readLocations[consumer], segmentLength);
+                        _readLocations[consumer] = 0;
+                        offset += segmentLength;
+                        bytesToRead -= segmentLength;
+                    }
+                    memcpy(buffer + offset, _buffer + _readLocations[consumer], bytesToRead);
+                    _readLocations[consumer] += bytesToRead;
+                    offset += bytesToRead;
+                    
+                    [_cond lock];
+                    {
+                        _filledBytesCounts[consumer] -= bytesRead;
+                        [_cond broadcast];
+                    }
+                    [_cond unlock];
+                }
+                else
+                {
+                    NSUInteger bytesToRead = length - offset;
+                    memset(buffer + offset, 0, bytesToRead);
+                    _readLocations[consumer] = (_readLocations[consumer] + bytesToRead) % _capacity;
+                    offset = length;
+                    
+                    [_cond lock];
+                    {
+                        _filledBytesCounts[consumer] -= bytesToRead;
+                        [_cond broadcast];
+                    }
+                    [_cond unlock];
+                    
+                }
+            }
+            return length;
+        }
     }
     else
     {
