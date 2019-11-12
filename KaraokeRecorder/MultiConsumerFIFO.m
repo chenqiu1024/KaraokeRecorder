@@ -61,7 +61,40 @@
     {
         if (waitForComplete)
         {
-            return 0;//TODO:
+            while (offset < length)
+            {
+                NSUInteger bytesToRead = length - offset;
+                [_cond lock];
+                {
+                    while (_filledBytesCounts[0] <= 0)
+                    {
+                        [_cond wait];
+                    }
+                    bytesToRead = bytesToRead < _filledBytesCounts[0] ? bytesToRead : _filledBytesCounts[0];
+                }
+                [_cond unlock];
+                NSUInteger bytesRead = bytesToRead;
+                
+                while (_readLocations[0] + bytesToRead >= _capacity)
+                {
+                    NSUInteger segmentLength = _capacity - _readLocations[0];
+                    memcpy(buffer + offset, _buffer + _readLocations[0], segmentLength);
+                    _readLocations[0] = 0;
+                    offset += segmentLength;
+                    bytesToRead -= segmentLength;
+                }
+                memcpy(buffer + offset, _buffer + _readLocations[0], bytesToRead);
+                _readLocations[0] += bytesToRead;
+                offset += bytesToRead;
+                
+                [_cond lock];
+                {
+                    _filledBytesCounts[0] -= bytesRead;
+                    [_cond broadcast];
+                }
+                [_cond unlock];
+            }
+            return length;
         }
         else
         {
