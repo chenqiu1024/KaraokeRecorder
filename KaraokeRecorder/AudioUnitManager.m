@@ -7,6 +7,7 @@
 //
 
 #import "AudioUnitManager.h"
+#import "MultiConsumerFIFO.h"
 #import <AVFoundation/AVFoundation.h>
 
 #define ENABLE_VERBOSE_AUDIOUNIT_LOGS
@@ -58,6 +59,8 @@ NSString* AudioUnitRenderActionFlagsString(AudioUnitRenderActionFlags flags) {
 @property (nonatomic, assign) AudioUnit mixerUnit;
 @property (nonatomic, assign) AudioBufferList* audioBufferList;
 @property (nonatomic, strong) NSMutableArray<NSMutableData* >* playbackDatas;
+
+@property (nonatomic, strong) NSArray<MultiConsumerFIFO* >* fifos;
 
 @end
 
@@ -156,81 +159,62 @@ static OSStatus MediaSourceCallbackProc(void* inRefCon
     return noErr;
 }
 
-static OSStatus RecordingCallbackProc(void* inRefCon
+static OSStatus BypassMediaSourceCallbackProc(void* inRefCon
+, AudioUnitRenderActionFlags* ioActionFlags
+, const AudioTimeStamp* inTimeStamp
+, UInt32 inBusNumber
+, UInt32 inNumberFrames
+, AudioBufferList* __nullable ioData) {
+    AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
+    if (!ioData) return noErr;
+    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender)) return noErr;
+    for (int i=0; i<ioData->mNumberBuffers; ++i)
+    {
+        if (!ioData->mBuffers[i].mData) continue;
+        [auMgr.fifos[i] appendData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize overwriteIfFull:YES waitForSpace:NO];
+        [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
+    }
+    return noErr;
+}
+
+static OSStatus RecordAndPlayCallbackProc(void* inRefCon
                                   , AudioUnitRenderActionFlags* ioActionFlags
                                   , const AudioTimeStamp* inTimeStamp
                                   , UInt32 inBusNumber
                                   , UInt32 inNumberFrames
                                   , AudioBufferList* __nullable ioData) {
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
-    if (!auMgr.isRecording)
-        return noErr;
     //printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
-    /*
-     int numBuffers = 1;
-     if (!auMgr.audioBufferList)
-     {
-     auMgr.audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
-     auMgr.audioBufferList->mNumberBuffers = numBuffers;
-     }
-     auMgr.audioBufferList->mNumberBuffers = numBuffers;
-     for (int i=0; i<numBuffers; ++i)
-     {
-     auMgr.audioBufferList->mBuffers[i].mNumberChannels = 1;
-     if (auMgr.audioBufferList->mBuffers[i].mDataByteSize < inNumberFrames * 2)
-     {
-     auMgr.audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * 2;
-     if (auMgr.audioBufferList->mBuffers[i].mData)
-     {
-     free(auMgr.audioBufferList->mBuffers[i].mData);
-     }
-     auMgr.audioBufferList->mBuffers[i].mData = malloc(auMgr.audioBufferList->mBuffers[i].mDataByteSize);
-     memset(auMgr.audioBufferList->mBuffers[i].mData, 0, auMgr.audioBufferList->mBuffers[i].mDataByteSize);
-     }
-     else
-     {
-     auMgr.audioBufferList->mBuffers[i].mDataByteSize = inNumberFrames * 2;
-     }
-     }
-     OSStatus result = AudioUnitRender(auMgr.ioUnit, ioActionFlags, inTimeStamp, inBusNumber, inNumberFrames, auMgr.audioBufferList);
-     if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
-     {
-     for (int i=0; i<numBuffers; ++i)
-     {
-     [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:auMgr.audioBufferList->mBuffers[i].mData length:auMgr.audioBufferList->mBuffers[i].mDataByteSize channel:i];
-     
-     static NSUInteger totalBytesLength = 0;
-     if (i == 0)
-     {
-     LOG_V(@"#AudioUnit# Recording: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
-     totalBytesLength += auMgr.audioBufferList->mBuffers[i].mDataByteSize;
-     }
-     }
-     }
-     /*/
     if (!ioData)
         return noErr;
-    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
-        return noErr;
-//    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
-//        return noErr;
-    
-    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+    if ((*ioActionFlags & kAudioUnitRenderAction_PreRender))
     {
+        
+    }
+    else if ((*ioActionFlags & kAudioUnitRenderAction_PostRender))
+    {
+        if (auMgr.isRecording && auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+        {
+            for (int i=0; i<ioData->mNumberBuffers; ++i)
+            {
+                if (!ioData->mBuffers[i].mData) continue;
+                [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
+                
+                //static NSUInteger totalBytesLength = 0;
+                //if (i == 0)
+                //{
+                //    LOG_V(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
+                //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
+                //}
+            }
+        }
+        
         for (int i=0; i<ioData->mNumberBuffers; ++i)
         {
             if (!ioData->mBuffers[i].mData) continue;
-            [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
-            
-            //static NSUInteger totalBytesLength = 0;
-            //if (i == 0)
-            //{
-            //    LOG_V(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
-            //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
-            //}
+            [auMgr.fifos[i] pullData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize consumer:1 waitForComplete:NO];
         }
     }
-    //*/
     //LOG_V(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
     return noErr;
 }
@@ -277,6 +261,10 @@ static OSStatus RecordingCallbackProc(void* inRefCon
     _micphoneSampleRate = 8000.f;
     _playbackSampleRate = 8000.f;
     _audioSourceSampleRate = 16000.f;
+    
+    MultiConsumerFIFO* fifo0 = [[MultiConsumerFIFO alloc] initWithCapacity:64000 slaveConsumers:0];
+    MultiConsumerFIFO* fifo1 = [[MultiConsumerFIFO alloc] initWithCapacity:64000 slaveConsumers:0];
+    _fifos = @[fifo0, fifo1];
     
     int numBuffers = 2;
     _audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
@@ -436,18 +424,17 @@ static OSStatus RecordingCallbackProc(void* inRefCon
     result = AUGraphSetNodeInputCallback(_auGraph, resampler4Media0Node, 0, &mediaSourceCallback);///!!!
 //    result = AudioUnitAddRenderNotify(_resampler4MicUnit, MediaSourceCallbackProc, (__bridge void* _Nullable) self);///!!!
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-    /*
-    AURenderCallbackStruct inputCallback;
-    inputCallback.inputProc = InputCallbackProc;
-    inputCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-    //result = AudioUnitSetProperty(_ioUnit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 1, &inputCallback, sizeof(inputCallback));
-    result = AudioUnitAddRenderNotify(_ioUnit, InputCallbackProc, (__bridge void* _Nullable) self);
+    //*
+//    AURenderCallbackStruct bypassMediaSourceCallback;
+//    bypassMediaSourceCallback.inputProc = BypassMediaSourceCallbackProc;
+//    bypassMediaSourceCallback.inputProcRefCon = (__bridge void* _Nullable) self;
+    result = AudioUnitAddRenderNotify(_resampler4Media0Unit, BypassMediaSourceCallbackProc, (__bridge void* _Nullable) self);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     //*/
-    AURenderCallbackStruct recordingCallback;
-    recordingCallback.inputProc = RecordingCallbackProc;
-    recordingCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-    result = AudioUnitAddRenderNotify(_mixerUnit, RecordingCallbackProc, (__bridge void* _Nullable) self);///!!!
+    AURenderCallbackStruct recordAndPlayCallback;
+    recordAndPlayCallback.inputProc = RecordAndPlayCallbackProc;
+    recordAndPlayCallback.inputProcRefCon = (__bridge void* _Nullable) self;
+    result = AudioUnitAddRenderNotify(_resampler4OutUnit, RecordAndPlayCallbackProc, (__bridge void* _Nullable) self);///!!!
 //    result = AudioUnitAddRenderNotify(_mixerUnit, MediaSourceCallbackProc, (__bridge void* _Nullable) self);
     //result = AudioUnitSetProperty(_resampler1Unit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &recordingCallback, sizeof(recordingCallback));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);

@@ -10,7 +10,7 @@
 
 @interface MultiConsumerFIFO ()
 
-@property (nonatomic, weak) id<MultiConsumerFIFODelegate> delegate;
+//@property (nonatomic, weak) id<MultiConsumerFIFODelegate> delegate;
 
 @property (nonatomic, strong) NSCondition* cond;
 
@@ -33,10 +33,10 @@
     free(_filledBytesCounts);
 }
 
--(instancetype) initWithCapacity:(NSUInteger)capacity slaveConsumers:(int)slaveConsumers delegate:(id<MultiConsumerFIFODelegate>)delegate {
+-(instancetype) initWithCapacity:(NSUInteger)capacity slaveConsumers:(int)slaveConsumers {/// delegate:(id<MultiConsumerFIFODelegate>)delegate {
     if (self = [super init])
     {
-        _delegate = delegate;
+//        _delegate = delegate;
         
         _buffer = malloc(capacity);
         _capacity = capacity;
@@ -128,16 +128,16 @@
                 {
                     NSUInteger bytesToRead = length - offset;
                     memset(buffer + offset, 0, bytesToRead);
-                    _readLocations[consumer] = (_readLocations[consumer] + bytesToRead) % _capacity;
+                    ///!!!_readLocations[consumer] = (_readLocations[consumer] + bytesToRead) % _capacity;
                     offset = length;
-                    
+                    /*///!!!
                     [_cond lock];
                     {
                         _filledBytesCounts[consumer] -= bytesToRead;
                         [_cond broadcast];
                     }
                     [_cond unlock];
-                    
+                    //*////!!!
                 }
             }
             return length;
