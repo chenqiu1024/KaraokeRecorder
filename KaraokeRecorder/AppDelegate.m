@@ -7,16 +7,36 @@
 //
 
 #import "AppDelegate.h"
+#import <AVFoundation/AVFoundation.h>
 
-@interface AppDelegate ()
+@interface AppDelegate () <AVAudioPlayerDelegate>
+
+@property (nonatomic, strong) AVAudioPlayer* audioPlayer;
+@property (nonatomic, assign) int audioFileIndex;
 
 @end
 
 @implementation AppDelegate
 
+-(void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
+    NSLog(@"audioPlayerDidFinishPlaying %d", flag);
+    NSString* docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+    NSURL* sourceURL = [NSURL fileURLWithPath:[docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%d.alaw", _audioFileIndex + 1]]];
+    _audioFileIndex = (_audioFileIndex + 1) % 4;
+    NSError* error = nil;
+    _audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:sourceURL fileTypeHint:@"alaw" error:&error];
+    _audioPlayer.delegate = self;
+    [_audioPlayer play];
+}
+
+-(void)audioPlayerDecodeErrorDidOccur:(AVAudioPlayer *)player error:(NSError * __nullable)error {
+    NSLog(@"audioPlayerDecodeErrorDidOccur %@", error);
+    [self audioPlayerDidFinishPlaying:nil successfully:YES];
+}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
+//    [self audioPlayerDidFinishPlaying:nil successfully:YES];
     return YES;
 }
 
