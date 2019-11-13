@@ -212,7 +212,7 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
         for (int i=0; i<ioData->mNumberBuffers; ++i)
         {
             if (!ioData->mBuffers[i].mData) continue;
-            [auMgr.fifos[i] pullData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize consumer:1 waitForComplete:NO];
+            [auMgr.fifos[i] pullData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize consumer:0 waitForComplete:NO];
         }
     }
     //LOG_V(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
