@@ -31,6 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 +(instancetype) sharedInstance;
 
 -(void) startPlaying;
+-(void) startPlayingFromAudioSource:(float)audioSourceSampleRate;
 -(void) startPlayingWithCompletionHandler:(void(^)(void))completion;
 -(void) startPlaying:(id<AudioUnitManagerDelegate>)delegate;
 -(void) stopPlaying;
@@ -45,6 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 +(NSData*) makeInterleavedSteroAudioDataFromMonoData:(const void*)data length:(NSUInteger)length;
 
 -(void) startAUGraphIfNecessary;
+-(void) startAUGraphIfNecessary:(float)audioSourceSampleRate;
 -(void) stopAUGraphIfNecessary;
 
 @end

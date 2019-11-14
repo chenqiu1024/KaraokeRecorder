@@ -99,37 +99,23 @@
     UIButton* button = (UIButton*) sender;
     if (0 == button.tag)
     {
-        [_auMgr startPlaying];
         NSLog(@"#AudioUnit# Start playing");
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            NSString* docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
-            NSString* srcPath = [docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"channel%d.pcm", 0]];
-            if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
-            {
+        NSString* docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+        NSString* srcPath = [docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"channel%d.pcm", 0]];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
+        {
+            [_auMgr startPlayingFromAudioSource:_auMgr.ioSampleRate];///!!!
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                
                 NSData* data = [NSData dataWithContentsOfFile:srcPath];
-//                data = [AudioUnitManager makeInterleavedSteroAudioDataFromMonoData:data.bytes length:data.length];
+                //                data = [AudioUnitManager makeInterleavedSteroAudioDataFromMonoData:data.bytes length:data.length];
                 [self.auMgr addAudioData:(void*)data.bytes length:(int)data.length channel:0];
-            }
-//            else
-//            {
-//                const float Frequencies[] = {660, 420};
-//                static NSUInteger totalSampleCounts[] = {0, 0};
-//                int samples = 65536;
-//                void* data = malloc(samples * 2);
-//                int16_t* pDst = data;
-//                for (int iSample=0; iSample<samples; iSample+=2)
-//                {
-//                    for (int iC=0; iC<2; ++iC)
-//                    {
-//                        float phase = Frequencies[iC] * M_PI * 2 * (++totalSampleCounts[iC]) / self.auMgr.audioSourceSampleRate;
-//                        *(pDst++) = (int16_t) (sinf(phase) * 16384);
-//                    }
-//                }
-//                
-//                [self.auMgr addAudioData:data length:(sizeof(int16_t) * samples) channel:0];
-//                free(data);
-//            }
-        });
+            });
+        }
+        else
+        {
+            [_auMgr startPlaying];
+        }
         
         button.tag = 1;
         [button setTitle:@"Stop Playing" forState:UIControlStateNormal];

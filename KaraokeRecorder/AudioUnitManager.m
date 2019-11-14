@@ -165,6 +165,8 @@ static OSStatus SaveResampledMediaCallbackProc(void* inRefCon
                                   , UInt32 inNumberFrames
                                   , AudioBufferList* __nullable ioData) {
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
+    if (!auMgr.isPlaying)
+        return noErr;
     if (!ioData)
         return noErr;
     if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
@@ -202,7 +204,7 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
 //    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
 //        return noErr;
     
-    if (auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+    if (auMgr.isRecording && auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
     {
         for (int i=0; i<ioData->mNumberBuffers; ++i)
         {
@@ -218,18 +220,25 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
         }
     }
     
-    for (int i=0; i<ioData->mNumberBuffers; ++i)
+    if (!auMgr.isPlaying)
     {
-        if (!ioData->mBuffers[i].mData) continue;
-        [auMgr.fifos[i] pullData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize consumer:0 waitForComplete:NO];
-        //static NSUInteger totalBytesLength = 0;
-        //if (i == 0)
-        //{
-        //    LOG_V(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
-        //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
-        //}
+        *ioActionFlags |= kAudioUnitRenderAction_OutputIsSilence;
+        for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
+        {
+            AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
+            if (!audioBuffer.mData) continue;
+            memset(audioBuffer.mData, 0, audioBuffer.mDataByteSize);
+        }
     }
-    //LOG_V(@"#AudioUnit# result=%d, ioActionFlags=0x%x, inBusNumber=%d, inNumberFrames=%d, inTimeStamp=%f, bufferList->mBuffers[0].mData=0x%lx... at %d in %s", result, *ioActionFlags, inBusNumber, inNumberFrames, inTimeStamp->mSampleTime, ((long*) auMgr.audioBufferList->mBuffers[0].mData)[0], __LINE__, __PRETTY_FUNCTION__);
+    else
+    {
+        for (int i=0; i<ioData->mNumberBuffers; ++i)
+        {
+            if (!ioData->mBuffers[i].mData) continue;
+            [auMgr.fifos[i] pullData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize consumer:0 waitForComplete:NO];
+        }
+    }
+    
     return noErr;
 }
 
@@ -489,6 +498,32 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     _isAUGraphRunning = YES;
 }
 
+-(void) startAUGraphIfNecessary:(float)audioSourceSampleRate {
+    if (!_auGraph)
+        return;
+    OSStatus result;
+    _audioSourceSampleRate = audioSourceSampleRate;
+    AudioStreamBasicDescription resampler4Media0InputASBD;
+    resampler4Media0InputASBD.mSampleRate = _audioSourceSampleRate;
+    resampler4Media0InputASBD.mFormatID = kAudioFormatLinearPCM;
+    resampler4Media0InputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+    resampler4Media0InputASBD.mFramesPerPacket = 1;
+    resampler4Media0InputASBD.mChannelsPerFrame = 2;
+    resampler4Media0InputASBD.mBitsPerChannel = 16;
+    
+    resampler4Media0InputASBD.mBytesPerFrame = resampler4Media0InputASBD.mBitsPerChannel * resampler4Media0InputASBD.mChannelsPerFrame / 8;
+    resampler4Media0InputASBD.mBytesPerPacket = resampler4Media0InputASBD.mBytesPerFrame * resampler4Media0InputASBD.mFramesPerPacket;
+    result = AudioUnitSetProperty(_resampler4Media0Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &resampler4Media0InputASBD, sizeof(resampler4Media0InputASBD));
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
+    if (!_isAUGraphRunning)
+    {
+        result = AUGraphStart(_auGraph);
+        LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+        _isAUGraphRunning = YES;
+    }
+}
+
 -(void) stopAUGraphIfNecessary {
     if (!_isAUGraphRunning || !_auGraph)
         return;
@@ -508,6 +543,15 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     }
     _isPlaying = YES;
     [self startAUGraphIfNecessary];
+}
+
+-(void) startPlayingFromAudioSource:(float)audioSourceSampleRate {
+    if (_playbackDatas)
+    {
+        _playbackDatas = nil;
+    }
+    _isPlaying = YES;
+    [self startAUGraphIfNecessary:audioSourceSampleRate];
 }
 
 -(void) startPlayingWithCompletionHandler:(void(^)(void))completion {
