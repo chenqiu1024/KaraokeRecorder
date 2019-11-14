@@ -10,7 +10,8 @@
 
 @interface MultiConsumerFIFO ()
 
-@property (nonatomic, weak) id<MultiConsumerFIFODelegate> delegate;
+//@property (nonatomic, weak) id<MultiConsumerFIFODelegate> delegate;
+@property (nonatomic, assign) BOOL isFinished;
 
 @property (nonatomic, strong) NSCondition* cond;
 
@@ -33,10 +34,12 @@
     free(_filledBytesCounts);
 }
 
--(instancetype) initWithCapacity:(NSUInteger)capacity slaveConsumers:(int)slaveConsumers delegate:(id<MultiConsumerFIFODelegate>)delegate {
+-(instancetype) initWithCapacity:(NSUInteger)capacity slaveConsumers:(int)slaveConsumers {/// delegate:(id<MultiConsumerFIFODelegate>)delegate {
     if (self = [super init])
     {
-        _delegate = delegate;
+//        _delegate = delegate;
+        
+        _isFinished = NO;
         
         _buffer = malloc(capacity);
         _capacity = capacity;
@@ -66,9 +69,14 @@
                 NSUInteger bytesToRead = length - offset;
                 [_cond lock];
                 {
-                    while (_filledBytesCounts[0] <= 0)
+                    while (_filledBytesCounts[0] <= 0 && !_isFinished)
                     {
                         [_cond wait];
+                    }
+                    if (_isFinished)
+                    {
+                        [_cond unlock];
+                        return 0;
                     }
                     bytesToRead = bytesToRead < _filledBytesCounts[0] ? bytesToRead : _filledBytesCounts[0];
                 }
@@ -230,10 +238,15 @@
             NSUInteger bytesToWrite = _capacity - _filledBytesCounts[0];
             [_cond lock];
             {
-                while (bytesToWrite <= 0)
+                while (bytesToWrite <= 0 && !_isFinished)
                 {
                     [_cond wait];
                     bytesToWrite = _capacity - _filledBytesCounts[0];
+                }
+                if (_isFinished)
+                {
+                    [_cond unlock];
+                    return 0;
                 }
             }
             [_cond unlock];
@@ -292,6 +305,13 @@
         
         return offset;
     }
+}
+
+-(void) finish {
+    [_cond lock];
+    _isFinished = YES;
+    [_cond broadcast];
+    [_cond unlock];
 }
 
 @end
