@@ -192,8 +192,8 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
                                   , UInt32 inNumberFrames
                                   , AudioBufferList* __nullable ioData) {
     AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
-    if (!auMgr.isRecording)
-        return noErr;
+//    if (!auMgr.isRecording)
+//        return noErr;
     //printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
     if (!ioData)
         return noErr;
