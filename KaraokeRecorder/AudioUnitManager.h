@@ -25,8 +25,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong) id<AudioUnitManagerDelegate> delegate;
 
-@property (nonatomic, assign, readonly) float ioSampleRate;
+@property (nonatomic, assign, readonly) float micSampleRate;
+@property (nonatomic, assign, readonly) float playbackSampleRate;
 @property (nonatomic, assign, readonly) float audioSourceSampleRate;
+@property (nonatomic, assign, readonly) float recordingSampleRate;
 
 +(instancetype) sharedInstance;
 
