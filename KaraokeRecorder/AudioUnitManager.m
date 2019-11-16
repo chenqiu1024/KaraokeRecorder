@@ -473,6 +473,8 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_mediaResampler0Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &mediaResampler0OutputASBD, sizeof(mediaResampler0OutputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    result = AudioUnitSetProperty(_mediaResampler1Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &mediaResampler0OutputASBD, sizeof(mediaResampler0OutputASBD));
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_mediaResampler1Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &mediaResampler1OutputASBD, sizeof(mediaResampler1OutputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     result = AudioUnitSetProperty(_inResamplerUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &micInResamplerOutputASBD, sizeof(micInResamplerOutputASBD));
@@ -709,14 +711,16 @@ static OSStatus PlaybackCallbackProc(void* inRefCon
         
         _recordingSampleRate = 16000.f;
         _audioSourceSampleRate = 16000.f;
-        AudioStreamBasicDescription resampler4Media0InputASBD;
-        resampler4Media0InputASBD.mSampleRate = _audioSourceSampleRate;
-        resampler4Media0InputASBD.mFormatID = kAudioFormatLinearPCM;
-        resampler4Media0InputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
-        resampler4Media0InputASBD.mFramesPerPacket = 1;
-        resampler4Media0InputASBD.mChannelsPerFrame = 2;
-        resampler4Media0InputASBD.mBitsPerChannel = 16;
-        [self openWithMediaSourceSpec:resampler4Media0InputASBD];
+        AudioStreamBasicDescription audioSourceInputASBD;
+        audioSourceInputASBD.mSampleRate = _audioSourceSampleRate;
+        audioSourceInputASBD.mFormatID = kAudioFormatLinearPCM;
+        audioSourceInputASBD.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+        audioSourceInputASBD.mFramesPerPacket = 1;
+        audioSourceInputASBD.mChannelsPerFrame = 2;
+        audioSourceInputASBD.mBitsPerChannel = 16;
+        AudioStreamBasicDescription recordingASBD = audioSourceInputASBD;
+        recordingASBD.mSampleRate = _recordingSampleRate;
+        [self openWithMediaSourceSpec:audioSourceInputASBD recordingOutputSpec:recordingASBD];
     }
     return self;
 }
