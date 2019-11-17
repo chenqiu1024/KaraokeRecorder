@@ -39,6 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
 -(void) startRecording:(id<AudioUnitManagerDelegate>)delegate;
 -(void) stopRecording;
 
+-(void) finish;
+
 -(void) addAudioData:(NSData*)monoData;
 
 -(void) addAudioData:(const void*)data length:(NSUInteger)length channel:(int)channel;

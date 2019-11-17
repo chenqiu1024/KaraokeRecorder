@@ -487,6 +487,8 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     [audioSession setMode:AVAudioSessionModeVideoRecording error:nil];///!!!
 //    [audioSession setMode:AVAudioSessionModeVoiceChat error:nil];///!!!
     [audioSession setActive:YES error:nil];
+    
+    [self startAUGraphIfNecessary];///!!!
 }
 
 -(void) startAUGraphIfNecessary {
@@ -501,7 +503,14 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
 -(void) startAUGraphIfNecessary:(float)audioSourceSampleRate {
     if (!_auGraph)
         return;
+    
     OSStatus result;
+    if (_isAUGraphRunning)
+    {
+        result = AUGraphStop(_auGraph);
+        LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    }
+    
     _audioSourceSampleRate = audioSourceSampleRate;
     AudioStreamBasicDescription resampler4Media0InputASBD;
     resampler4Media0InputASBD.mSampleRate = _audioSourceSampleRate;
@@ -516,20 +525,17 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     result = AudioUnitSetProperty(_resampler4Media0Unit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &resampler4Media0InputASBD, sizeof(resampler4Media0InputASBD));
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
-    if (!_isAUGraphRunning)
-    {
-        result = AUGraphStart(_auGraph);
-        LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
-        _isAUGraphRunning = YES;
-    }
+    result = AUGraphStart(_auGraph);
+    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    _isAUGraphRunning = YES;
 }
 
 -(void) stopAUGraphIfNecessary {
     if (!_isAUGraphRunning || !_auGraph)
         return;
     
-    if (_isPlaying || _isRecording)
-        return;
+//    if (_isPlaying || _isRecording)
+//        return;
     
     OSStatus result = AUGraphStop(_auGraph);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
@@ -576,7 +582,7 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     {
         _playbackDatas = nil;
     }
-    [self stopAUGraphIfNecessary];
+//    [self stopAUGraphIfNecessary];
 }
 
 -(void) startRecording {
@@ -592,6 +598,10 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
 
 -(void) stopRecording {
     _isRecording = NO;
+//    [self stopAUGraphIfNecessary];
+}
+
+-(void) finish {
     [self stopAUGraphIfNecessary];
 }
 
