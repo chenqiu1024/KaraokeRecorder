@@ -354,12 +354,26 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
--(void) open {
+-(void) openWithMediaSourceSpec:(AudioStreamBasicDescription)mediaInputASBD recordingOutputSpec:(AudioStreamBasicDescription)recordOutputASBD {
     /// Sample rate 8000Hz is NG for Bluetooth headphone, WHY?
     /// Presume that the audio recording samplerate is the same as playback samplerate
-    _ioSampleRate = 8000.f;
-    _audioSourceSampleRate = 16000.f;
-    _recordingSampleRate = 16000.f;
+    double preferredHardwareSampleRate;
+    if ([[AVAudioSession sharedInstance] respondsToSelector:@selector(sampleRate)])
+    {
+        preferredHardwareSampleRate = [[AVAudioSession sharedInstance] sampleRate];
+    }
+    else
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        preferredHardwareSampleRate = [[AVAudioSession sharedInstance] currentHardwareSampleRate];
+#pragma clang diagnostic pop
+    }
+    preferredHardwareSampleRate = 8000.f;///!!!
+    _ioSampleRate = preferredHardwareSampleRate;
+    
+    _recordingSampleRate = recordOutputASBD.mSampleRate;
+    _audioSourceSampleRate = mediaInputASBD.mSampleRate;
     
     int numBuffers = 2;
     _audioBufferList = (AudioBufferList*) malloc(sizeof(AudioBufferList) + sizeof(AudioBuffer) * (numBuffers - 1));
@@ -469,23 +483,21 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     ioOutputASBD.mBytesPerFrame = ioOutputASBD.mBitsPerChannel * ioOutputASBD.mChannelsPerFrame / 8;
     ioOutputASBD.mBytesPerPacket = ioOutputASBD.mBytesPerFrame * ioOutputASBD.mFramesPerPacket;
     
-//    AudioStreamBasicDescription resampler4MicOutputASBD = ioInputASBD;
-//    resampler4MicOutputASBD.mSampleRate = _playbackSampleRate;
-////    resampler4MicOutputASBD = ioOutputASBD;///!!!
-    
-    AudioStreamBasicDescription mediaResampler0InputASBD_m2;
-    mediaResampler0InputASBD_m2.mSampleRate = _audioSourceSampleRate;
-    mediaResampler0InputASBD_m2.mFormatID = kAudioFormatLinearPCM;
-    mediaResampler0InputASBD_m2.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
-    mediaResampler0InputASBD_m2.mFramesPerPacket = 1;
-    mediaResampler0InputASBD_m2.mChannelsPerFrame = 2;
-    mediaResampler0InputASBD_m2.mBitsPerChannel = 16;
-    
-    mediaResampler0InputASBD_m2.mBytesPerFrame = mediaResampler0InputASBD_m2.mBitsPerChannel * mediaResampler0InputASBD_m2.mChannelsPerFrame / 8;
-    mediaResampler0InputASBD_m2.mBytesPerPacket = mediaResampler0InputASBD_m2.mBytesPerFrame * mediaResampler0InputASBD_m2.mFramesPerPacket;
-    
-    AudioStreamBasicDescription mediaResampler0OutputASBD_r2 = mediaResampler0InputASBD_m2;
-    mediaResampler0OutputASBD_r2.mSampleRate = _recordingSampleRate;
+//    AudioStreamBasicDescription mediaResampler0InputASBD_m2;
+//    mediaResampler0InputASBD_m2.mSampleRate = _audioSourceSampleRate;
+//    mediaResampler0InputASBD_m2.mFormatID = kAudioFormatLinearPCM;
+//    mediaResampler0InputASBD_m2.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+//    mediaResampler0InputASBD_m2.mFramesPerPacket = 1;
+//    mediaResampler0InputASBD_m2.mChannelsPerFrame = 2;
+//    mediaResampler0InputASBD_m2.mBitsPerChannel = 16;
+//
+//    mediaResampler0InputASBD_m2.mBytesPerFrame = mediaResampler0InputASBD_m2.mBitsPerChannel * mediaResampler0InputASBD_m2.mChannelsPerFrame / 8;
+//    mediaResampler0InputASBD_m2.mBytesPerPacket = mediaResampler0InputASBD_m2.mBytesPerFrame * mediaResampler0InputASBD_m2.mFramesPerPacket;
+//
+//    AudioStreamBasicDescription mediaResampler0OutputASBD_r2 = mediaResampler0InputASBD_m2;
+//    mediaResampler0OutputASBD_r2.mSampleRate = _recordingSampleRate;
+    AudioStreamBasicDescription mediaResampler0InputASBD_m2 = mediaInputASBD;
+    AudioStreamBasicDescription mediaResampler0OutputASBD_r2 = recordOutputASBD;
     
     AudioStreamBasicDescription mediaResampler1OutputASBD_i2 = mediaResampler0OutputASBD_r2;
     mediaResampler1OutputASBD_i2.mSampleRate = _ioSampleRate;
@@ -748,7 +760,25 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
         _isAUGraphRunning = NO;
         _isPlaying = NO;
         _isRecording = NO;
-        [self open];
+        
+        _audioSourceSampleRate = 16000.f;
+        _recordingSampleRate = 16000.f;
+        
+        AudioStreamBasicDescription mediaResampler0InputASBD_m2;
+        mediaResampler0InputASBD_m2.mSampleRate = _audioSourceSampleRate;
+        mediaResampler0InputASBD_m2.mFormatID = kAudioFormatLinearPCM;
+        mediaResampler0InputASBD_m2.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+        mediaResampler0InputASBD_m2.mFramesPerPacket = 1;
+        mediaResampler0InputASBD_m2.mChannelsPerFrame = 2;
+        mediaResampler0InputASBD_m2.mBitsPerChannel = 16;
+        
+        mediaResampler0InputASBD_m2.mBytesPerFrame = mediaResampler0InputASBD_m2.mBitsPerChannel * mediaResampler0InputASBD_m2.mChannelsPerFrame / 8;
+        mediaResampler0InputASBD_m2.mBytesPerPacket = mediaResampler0InputASBD_m2.mBytesPerFrame * mediaResampler0InputASBD_m2.mFramesPerPacket;
+        
+        AudioStreamBasicDescription mediaResampler0OutputASBD_r2 = mediaResampler0InputASBD_m2;
+        mediaResampler0OutputASBD_r2.mSampleRate = _recordingSampleRate;
+        
+        [self openWithMediaSourceSpec:mediaResampler0InputASBD_m2 recordingOutputSpec:mediaResampler0OutputASBD_r2];
     }
     return self;
 }
