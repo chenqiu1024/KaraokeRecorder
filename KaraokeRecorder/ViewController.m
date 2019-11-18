@@ -104,7 +104,7 @@
         NSString* srcPath = [docPath stringByAppendingPathComponent:[NSString stringWithFormat:@"channel%d.pcm", 0]];
         if ([[NSFileManager defaultManager] fileExistsAtPath:srcPath])
         {
-            [_auMgr startPlayingFromAudioSource:_auMgr.ioSampleRate];///!!!
+            [_auMgr startPlayingFromAudioSource:_auMgr.recordingSampleRate];///!!!
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                 
                 NSData* data = [NSData dataWithContentsOfFile:srcPath];
