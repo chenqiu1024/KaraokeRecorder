@@ -28,7 +28,7 @@
 @implementation ViewController
 
 -(void) audioUnitManager:(AudioUnitManager*)auMgr didReceiveAudioData:(void*)data length:(int)length channel:(int)channel {
-    NSLog(@"#AudioUnit# Delegate: didReceiveAudioData 0x%lx %d bytes", (long)data, length);
+//    NSLog(@"#AudioUnit# Delegate: didReceiveAudioData 0x%lx %d bytes", (long)data, length);
     for (NSUInteger i=_recordAudioDatas.count; i<=channel; ++i)
     {
         [_recordAudioDatas addObject:[[NSMutableData alloc] init]];

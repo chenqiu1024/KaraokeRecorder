@@ -189,7 +189,7 @@ static OSStatus SaveResampledMediaCallbackProc(void* inRefCon
     return noErr;
 }
 
-static OSStatus RecordAndPlayCallbackProc(void* inRefCon
+static OSStatus RecordingCallbackProc(void* inRefCon
                                   , AudioUnitRenderActionFlags* ioActionFlags
                                   , const AudioTimeStamp* inTimeStamp
                                   , UInt32 inBusNumber
@@ -205,6 +205,74 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
         return noErr;
 //    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
 //        return noErr;
+    
+    if (auMgr.isRecording && auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
+    {
+        for (int i=0; i<ioData->mNumberBuffers; ++i)
+        {
+            if (!ioData->mBuffers[i].mData) continue;
+            [auMgr.delegate audioUnitManager:auMgr didReceiveAudioData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize channel:i];
+            
+            //static NSUInteger totalBytesLength = 0;
+            //if (i == 0)
+            //{
+            //    LOG_V(@"#AudioUnit# ReSampler: totalBytesLength=%ld, inNumberFrames=%d", totalBytesLength, inNumberFrames);
+            //    totalBytesLength += ioData->mBuffers[i].mDataByteSize;
+            //}
+        }
+    }
+    return noErr;
+}
+
+static OSStatus PlayingCallbackProc(void* inRefCon
+                                  , AudioUnitRenderActionFlags* ioActionFlags
+                                  , const AudioTimeStamp* inTimeStamp
+                                  , UInt32 inBusNumber
+                                  , UInt32 inNumberFrames
+                                  , AudioBufferList* __nullable ioData) {
+    AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
+//    if (!auMgr.isRecording)
+//        return noErr;
+    //printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
+    if (!ioData)
+        return noErr;
+    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
+        return noErr;
+    if (!auMgr.isPlaying)
+    {
+        *ioActionFlags |= kAudioUnitRenderAction_OutputIsSilence;
+        for (int iBuffer=0; iBuffer<ioData->mNumberBuffers; ++iBuffer)
+        {
+            AudioBuffer audioBuffer = ioData->mBuffers[iBuffer];
+            if (!audioBuffer.mData) continue;
+            memset(audioBuffer.mData, 0, audioBuffer.mDataByteSize);
+        }
+    }
+    else
+    {
+        for (int i=0; i<ioData->mNumberBuffers; ++i)
+        {
+            if (!ioData->mBuffers[i].mData) continue;
+            [auMgr.fifos[i] pullData:ioData->mBuffers[i].mData length:ioData->mBuffers[i].mDataByteSize consumer:0 waitForComplete:NO];
+        }
+    }
+    return noErr;
+}
+
+static OSStatus RecordAndPlayCallbackProc(void* inRefCon
+                                  , AudioUnitRenderActionFlags* ioActionFlags
+                                  , const AudioTimeStamp* inTimeStamp
+                                  , UInt32 inBusNumber
+                                  , UInt32 inNumberFrames
+                                  , AudioBufferList* __nullable ioData) {
+    AudioUnitManager* auMgr = (__bridge AudioUnitManager*) inRefCon;
+//    if (!auMgr.isRecording)
+//        return noErr;
+    //printf("\n#AudioUnit#.. Resample: actionFlags=%s, (bus, frames)=(%d, %d)\n", AudioUnitRenderActionFlagsString(*ioActionFlags).UTF8String, inBusNumber, inNumberFrames);
+    if (!ioData)
+        return noErr;
+    if (!(*ioActionFlags & kAudioUnitRenderAction_PostRender))
+        return noErr;
     
     if (auMgr.isRecording && auMgr.delegate && [auMgr.delegate respondsToSelector:@selector(audioUnitManager:didReceiveAudioData:length:channel:)])
     {
@@ -477,14 +545,14 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     result = AudioUnitAddRenderNotify(_ioUnit, InputCallbackProc, (__bridge void* _Nullable) self);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     //*/
-    AURenderCallbackStruct recordAndPlayCallback;
-    recordAndPlayCallback.inputProc = RecordAndPlayCallbackProc;
-    recordAndPlayCallback.inputProcRefCon = (__bridge void* _Nullable) self;
-    result = AudioUnitAddRenderNotify(_mixerUnit, RecordAndPlayCallbackProc, (__bridge void* _Nullable) self);///!!!
+    result = AudioUnitAddRenderNotify(_recordingResamplerUnit_i2r2, RecordAndPlayCallbackProc, (__bridge void* _Nullable) self);///!!!
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     result = AudioUnitAddRenderNotify(_mediaResampler0Unit_m2o2, SaveResampledMediaCallbackProc, (__bridge void* _Nullable) self);///!!!
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
+    
+//    result = AudioUnitAddRenderNotify(_ioUnit, PlayingCallbackProc, (__bridge void* _Nullable) self);///!!!
+//    LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
     
     result = AUGraphInitialize(_auGraph);
     LOG_V(@"#AudioUnit# result=%d. at %d in %s", result, __LINE__, __PRETTY_FUNCTION__);
