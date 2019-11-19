@@ -754,6 +754,17 @@ static OSStatus RecordAndPlayCallbackProc(void* inRefCon
     [self close];
 }
 
+-(instancetype) initWithMediaSourceSpec:(AudioStreamBasicDescription)mediaSourceSpec recordingOutputSpec:(AudioStreamBasicDescription)recordingOutputSpec {
+    if (self = [super init])
+    {
+        _isAUGraphRunning = NO;
+        _isPlaying = NO;
+        _isRecording = NO;
+        [self openWithMediaSourceSpec:mediaSourceSpec recordingOutputSpec:recordingOutputSpec];
+    }
+    return self;
+}
+
 -(instancetype) init {
     if (self = [super init])
     {

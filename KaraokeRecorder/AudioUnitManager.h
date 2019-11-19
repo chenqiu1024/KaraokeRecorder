@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <AVFoundation/AVFoundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -30,6 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign, readonly) float recordingSampleRate;
 
 +(instancetype) sharedInstance;
+
+-(instancetype) initWithMediaSourceSpec:(AudioStreamBasicDescription)mediaSourceSpec recordingOutputSpec:(AudioStreamBasicDescription)recordingOutputSpec;
 
 -(void) startPlaying;
 -(void) startPlayingFromAudioSource:(float)audioSourceSampleRate;
